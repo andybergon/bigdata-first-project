@@ -11,7 +11,7 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 public class TopProducts {
 
 	public static void main(String[] args) throws Exception {
-
+		
 		Job job = new Job(new Configuration(), "TopProducts");
 
 		job.setJarByClass(TopProducts.class);
