@@ -25,13 +25,15 @@ import org.apache.hadoop.util.ToolRunner;
 import org.apache.hadoop.io.Text;
 
 /**
- * Method 1: First create the JobConf object “job1″ for the first job and set
+ * Method 1: 
+ * First create the JobConf object “job1″ for the first job and set
  * all the parameters with “input” as inputdirectory and “temp” as output
  * directory. Execute this job: JobClient.run(job1). Immediately below it,
  * create the JobConf object “job2″ for the second job and set all the
  * parameters with “temp” as inputdirectory and “output” as output directory.
- * Finally execute second job: JobClient.run(job2). Method 2: Create two JobConf
- * objects and set all the parameters in them just like (1) except that you
+ * Finally execute second job: JobClient.run(job2). 
+ * Method 2: 
+ * Create two JobConf objects and set all the parameters in them just like (1) except that you
  * don’t use JobClient.run. Then create two Job objects with jobconfs as
  * parameters: Job job1=new Job(jobconf1); Job job2=new Job(jobconf2); Using the
  * jobControl object, you specify the job dependencies and then run the jobs:
@@ -40,16 +42,14 @@ import org.apache.hadoop.io.Text;
  */
 public class TopProductsChain extends Configured implements Tool {
 	private static final IntWritable ONE = new IntWritable(1);
-
-	/*
-	 * Abbiamo righe in questo formato 2015-8-20,pesce,formaggio,insalata,pane
-	 * con il primo mapper tagliamo il giorno dalla data e formiamo righe con
-	 * data,prodotto come chiave e 1 come valore 2015-8,pesce,1
-	 * 2015-8,formaggio,1 quindi in output abbiamo Text, IntWritable
-	 */
+	/* Abbiamo righe in questo formato 2015-8-20,pesce,formaggio,insalata,pane
+	con il primo mapper tagliamo il giorno dalla data e formiamo righe con data,prodotto come
+	chiave e 1 come valore 
+	2015-8,pesce,1
+	2015-8,formaggio,1
+	quindi in output abbiamo Text, IntWritable*/
 	public static class Mapper1 extends Mapper<LongWritable, Text, Text, IntWritable> {
 		private Text keyDateProduct = new Text();
-
 		protected void map(Text key, LongWritable value, Context ctx) throws IOException, InterruptedException {
 			String line = value.toString();
 			String[] rowElements = line.split(",");
@@ -58,19 +58,17 @@ public class TopProductsChain extends Configured implements Tool {
 				dateFormatted = dateFormatted.substring(0, 6);
 			}
 			for (int i = 1; i < rowElements.length; i++) {
-				keyDateProduct.set(dateFormatted + "," + rowElements[i]);
+				keyDateProduct.set(dateFormatted+","+rowElements[i]);
 				ctx.write(key, ONE);
 			}
 		}
 	}
-
-	/*
-	 * Il primo reducer ci fa le somme quindi 2015-8,pesce,1 2015-8,pesce,1
+	/* Il primo reducer ci fa le somme quindi 2015-8,pesce,1  2015-8,pesce,1
 	 * 2015-8,pesce,2
 	 */
 	public static class Reducer1 extends Reducer<Text, IntWritable, Text, IntWritable> {
-		public void reduce(Text key, Iterable<IntWritable> values, Context context)
-				throws IOException, InterruptedException {
+		public void reduce(Text key, Iterable<IntWritable> values,
+				Context context) throws IOException, InterruptedException {
 			int sum = 0;
 			for (IntWritable value : values) {
 				sum += value.get();
@@ -78,11 +76,9 @@ public class TopProductsChain extends Configured implements Tool {
 			context.write(key, new IntWritable(sum));
 		}
 	}
-
-	/*
-	 * Questo secondo mapper deve aggregare per chiave prendendo solamente la
-	 * data e associando la lista prodotto,quantità 2015-8,pesce,2,formaggio,30,
-	 * .... NON so quando prendere i 5 più venduti
+	/* Questo secondo mapper deve aggregare per chiave prendendo solamente la data e associando la lista prodotto,quantità
+	 * 2015-8,pesce,2,formaggio,30, ....
+	 * NON so quando prendere i 5 più venduti
 	 */
 	public static class Mapper2 extends Mapper<Text, Text, Text, IntWritable> {
 
@@ -119,7 +115,7 @@ public class TopProductsChain extends Configured implements Tool {
 		FileOutputFormat.setOutputPath(job2, output);
 		job2.setJarByClass(TopProductsChain.class);
 		job2.setMapperClass(Mapper2.class);
-		// job2.setReducerClass(Reducer1.class);
+		//job2.setReducerClass(Reducer1.class);
 		job2.setInputFormatClass(KeyValueTextInputFormat.class);
 		job2.setMapOutputKeyClass(Text.class);
 		job2.setMapOutputValueClass(IntWritable.class);
