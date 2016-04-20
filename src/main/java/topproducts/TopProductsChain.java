@@ -109,7 +109,7 @@ public class TopProductsChain extends Configured implements Tool {
 	 * */
 	
 	public static class Reducer2 extends Reducer<Text, Text, Text, Text> {
-		private Map<String, Integer> countMap = new HashMap<String, Integer>();
+		private Map<String, Integer> countMap = new TreeMap<String, Integer>();
 		
 		class ValueComparator implements Comparator<String> {
 		    Map<String, Integer> base;
@@ -136,7 +136,8 @@ public class TopProductsChain extends Configured implements Tool {
 			
 			for (Text value : values) {
 				String product = "";
-				String quantity = "";
+				String tokenQuantity = "";
+				int quantity=0;
 				String line = value.toString();
 		        StringTokenizer tokenizer = new StringTokenizer(line);
 		        
@@ -145,14 +146,14 @@ public class TopProductsChain extends Configured implements Tool {
 		        while (tokenizer.hasMoreTokens()) { //TODO
 		        	product = tokenizer.nextToken();
 		        	System.out.println("prod:" + product);
-		        	quantity = tokenizer.nextToken();
-		        	if(quantity.equals(","))//questa quantity la vede come "," !!!!!!!!!!!!!!!
-		        		quantity = "1";//per fare una prova ho messo 1
-		        	System.out.println("qty:" + quantity);
+		        	tokenQuantity = tokenizer.nextToken();
+		        	//if(tokenQuantity.equals(","))//questa quantity la vede come "," !!!!!!!!!!!!!!!
+		        		tokenQuantity = "1";//per fare una prova ho messo 1
+		        	System.out.println("qty:" + tokenQuantity);
 		        }
 				
 				//String[] rows = value.toString().split("\t"); //TODO: check
-				Integer quantityInteger = new Integer(quantity);//questa quantity la vede come ","
+				Integer quantityInteger = new Integer(tokenQuantity);//questa quantity la vede come ","
 				System.out.println("product:" + product);
 				System.out.println("Integer:" + quantityInteger);
 				countMap.put(product, quantityInteger);
@@ -176,7 +177,7 @@ public class TopProductsChain extends Configured implements Tool {
 				if (counter == 4) { //TODO: check if 6
 					break;
 				}
-				fiveProducts = fiveProducts + keySorted + " ";// + sortedMap.get(keySorted).toString();
+				fiveProducts = fiveProducts + keySorted + " " + countMap.get(keySorted).toString();//questo get restituisce null
 				if (counter != 4) {
 					fiveProducts += ", ";
 				}
