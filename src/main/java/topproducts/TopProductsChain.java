@@ -27,6 +27,8 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
+
+
 import org.apache.hadoop.io.Text;
 
 public class TopProductsChain extends Configured implements Tool {
@@ -110,6 +112,26 @@ public class TopProductsChain extends Configured implements Tool {
 	
 	public static class Reducer2 extends Reducer<Text, Text, Text, Text> {
 		private Map<String, Integer> countMap = new TreeMap<String, Integer>();
+		private static final int TOP_K = 5;
+	    private class Pair {
+	        public String str;
+	        public Integer count;
+	        
+	        public Pair(String str, Integer count) {
+	          this.str = str;
+	          this.count = count;
+	        }
+	      };
+	      private PriorityQueue<Pair> queue;
+	      
+	      @Override
+	      protected void setup(Context ctx) {
+	        queue = new PriorityQueue<Pair>(TOP_K, new Comparator<Pair>() {
+	          public int compare(Pair p1, Pair p2) {
+	            return p1.count.compareTo(p2.count);
+	          }
+	        });
+	      }
 		
 		class ValueComparator implements Comparator<String> {
 		    Map<String, Integer> base;
@@ -134,21 +156,26 @@ public class TopProductsChain extends Configured implements Tool {
 				throws IOException, InterruptedException {
 			Text monthlyProducts = new Text();
 			
-			for (Text value : values) {
+			/*for (Text value : values) {
 				String product = "";
 				String tokenQuantity = "";
 				int quantity=0;
 				String line = value.toString();
-		        StringTokenizer tokenizer = new StringTokenizer(line);
+				//line.replaceAll(",", "");
+		        //StringTokenizer tokenizer = new StringTokenizer(line);
 		        
 		        System.out.println("key:" + key);
 		        System.out.println("line:" + line);
-		        while (tokenizer.hasMoreTokens()) { //TODO
+		        /*String[] lineList=line.split("\t");
+		        product = lineList[0];
+		        tokenQuantity = "1";*/
+		        
+		        /*while (tokenizer.hasMoreTokens()) { //TODO
 		        	product = tokenizer.nextToken();
 		        	System.out.println("prod:" + product);
 		        	tokenQuantity = tokenizer.nextToken();
 		        	//if(tokenQuantity.equals(","))//questa quantity la vede come "," !!!!!!!!!!!!!!!
-		        		tokenQuantity = "1";//per fare una prova ho messo 1
+		        	//	tokenQuantity = "1";//per fare una prova ho messo 1
 		        	System.out.println("qty:" + tokenQuantity);
 		        }
 				
@@ -189,15 +216,26 @@ public class TopProductsChain extends Configured implements Tool {
 			monthlyProducts.set(fiveProducts);
 			context.write(key, monthlyProducts);
 			
-			/*
+			*/
+
+			String product = "";
+			String tokenQuantity = "33";
 						String mpString = "";
 						for (Text value : values) {
-							mpString = mpString + value.toString() + ", ";
+							String line = value.toString();
+							String[] lineList=line.split("\t");
+					        product = lineList[0];
+					        if(lineList.length>1){
+					        	tokenQuantity = lineList[1];
+					        	Integer quantityInteger = new Integer(tokenQuantity);
+					        }
+							mpString = mpString + product + " "+tokenQuantity+", ";
+							
 						}
 						
 						monthlyProducts.set(mpString);
 						context.write(key, monthlyProducts);
-		*/}
+		}
 	}
 
 	public int run(String[] args) throws Exception {
