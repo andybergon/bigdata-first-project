@@ -3,8 +3,12 @@ package topproducts;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.PriorityQueue;
+import java.util.TreeMap;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
@@ -119,17 +123,59 @@ public class TopProductsChain extends Configured implements Tool {
 	 * */
 	
 	public static class Reducer2 extends Reducer<Text, Text, Text, Text> {
+		private Map<String, Integer> countMap = new HashMap<String, Integer>();
+		
+		class ValueComparator implements Comparator<String> {
+		    Map<String, Integer> base;
+
+		    public ValueComparator(Map<String, Integer> base) {
+		        this.base = base;
+		    }
+
+		    // Note: this comparator imposes orderings that are inconsistent with
+		    // equals.
+		    public int compare(String a, String b) {
+		        if (base.get(a) > base.get(b)) { //TODO: second sort on name
+		            return -1;
+		        } else {
+		            return 1;
+		        } // returning 0 would merge keys
+		    }
+		}
+		
 		@Override
 		public void reduce(Text key, Iterable<Text> values, Context context)
 				throws IOException, InterruptedException {
 			Text monthlyProducts = new Text();
-			String mpString = "";
+			//String mpString = "";
+			
 			for (Text value : values) {
-				mpString = mpString + value.toString() + ", ";
+				//mpString = mpString + value.toString() + ", ";
+				String[] rows = value.toString().split("\t"); //TODO: check
+				String product = rows[0];
+				Integer quantity = new Integer(rows[1]);
+				countMap.put(product, quantity);
+			}
+			ValueComparator bvc = new ValueComparator(countMap);
+			TreeMap<String, Integer> sortedMap = new TreeMap<String, Integer>(bvc);
+			sortedMap.putAll(countMap);
+			
+			String fiveProducts = "";
+			int counter = 0;
+			for (String keySorted : sortedMap.keySet()) {
+				if (counter == 4) { //TODO: check if 6
+					break;
+				}
+				fiveProducts = fiveProducts + keySorted + " " + sortedMap.get(keySorted);
+				if (counter != 4) {
+					fiveProducts += ", ";
+				}
+				counter++;
 			}
 			
-			monthlyProducts.set(mpString);
+			monthlyProducts.set(fiveProducts);
 			context.write(key, monthlyProducts);
+
 		}
 	}
 
