@@ -29,22 +29,6 @@ import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.apache.hadoop.io.Text;
 
-/**
- * Method 1: 
- * First create the JobConf object “job1″ for the first job and set
- * all the parameters with “input” as inputdirectory and “temp” as output
- * directory. Execute this job: JobClient.run(job1). Immediately below it,
- * create the JobConf object “job2″ for the second job and set all the
- * parameters with “temp” as inputdirectory and “output” as output directory.
- * Finally execute second job: JobClient.run(job2). 
- * Method 2: 
- * Create two JobConf objects and set all the parameters in them just like (1) except that you
- * don’t use JobClient.run. Then create two Job objects with jobconfs as
- * parameters: Job job1=new Job(jobconf1); Job job2=new Job(jobconf2); Using the
- * jobControl object, you specify the job dependencies and then run the jobs:
- * JobControl jbcntrl=new JobControl(“jbcntrl”); jbcntrl.addJob(job1);
- * jbcntrl.addJob(job2); job2.addDependingJob(job1); jbcntrl.run();
- */
 public class TopProductsChain extends Configured implements Tool {
 	private static final IntWritable ONE = new IntWritable(1);
 	/* Abbiamo righe in questo formato 2015-8-20,pesce,formaggio,insalata,pane
@@ -137,7 +121,7 @@ public class TopProductsChain extends Configured implements Tool {
 		    // Note: this comparator imposes orderings that are inconsistent with
 		    // equals.
 		    public int compare(String a, String b) {
-		        if (base.get(a) > base.get(b)) { //TODO: second sort on name
+		        if (base.get(a) >= base.get(b)) { //TODO: second sort on name
 		            return -1;
 		        } else {
 		            return 1;
@@ -162,11 +146,13 @@ public class TopProductsChain extends Configured implements Tool {
 		        	product = tokenizer.nextToken();
 		        	System.out.println("prod:" + product);
 		        	quantity = tokenizer.nextToken();
+		        	if(quantity.equals(","))//questa quantity la vede come "," !!!!!!!!!!!!!!!
+		        		quantity = "1";//per fare una prova ho messo 1
 		        	System.out.println("qty:" + quantity);
 		        }
 				
 				//String[] rows = value.toString().split("\t"); //TODO: check
-				Integer quantityInteger = new Integer(quantity);
+				Integer quantityInteger = new Integer(quantity);//questa quantity la vede come ","
 				System.out.println("product:" + product);
 				System.out.println("Integer:" + quantityInteger);
 				countMap.put(product, quantityInteger);
@@ -190,7 +176,7 @@ public class TopProductsChain extends Configured implements Tool {
 				if (counter == 4) { //TODO: check if 6
 					break;
 				}
-				fiveProducts = fiveProducts + keySorted + " " + sortedMap.get(keySorted).toString();
+				fiveProducts = fiveProducts + keySorted + " ";// + sortedMap.get(keySorted).toString();
 				if (counter != 4) {
 					fiveProducts += ", ";
 				}
@@ -201,14 +187,22 @@ public class TopProductsChain extends Configured implements Tool {
 			System.out.println("fiveProd:" + fiveProducts);
 			monthlyProducts.set(fiveProducts);
 			context.write(key, monthlyProducts);
-
-		}
+			
+			/*
+						String mpString = "";
+						for (Text value : values) {
+							mpString = mpString + value.toString() + ", ";
+						}
+						
+						monthlyProducts.set(mpString);
+						context.write(key, monthlyProducts);
+		*/}
 	}
 
 	public int run(String[] args) throws Exception {
 		Path input = new Path(args[0]);
 		Path output = new Path(args[1]);
-		Path temp = new Path("/tmp");
+		Path temp = new Path("tmp/tmp");//questo deve essere un file nella cartella tmp!!!!! NON una cartella!
 		
 		Configuration conf = getConf();
 		boolean succ = false;
