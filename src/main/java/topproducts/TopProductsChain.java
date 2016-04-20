@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
+import java.util.StringTokenizer;
 import java.util.TreeMap;
 
 import org.apache.hadoop.conf.Configuration;
@@ -91,10 +92,8 @@ public class TopProductsChain extends Configured implements Tool {
 	 * 2015-8:pesce 2, 
 	 * 2015-8:formaggio 30
 	 * => 
-	 * 2015-8:pesce 2
-	 * 2015-8:formaggio 30
-	 * 
-	 * NON so quando prendere i 5 più venduti
+	 * 2015-8 pesce 2
+	 * 2015-8 formaggio 30
 	 */
 	public static class Mapper2 extends Mapper<LongWritable, Text, Text, Text> {
 
@@ -103,12 +102,15 @@ public class TopProductsChain extends Configured implements Tool {
 			Text dataKey = new Text();
 			Text prodQuantityValue = new Text();
 			String data, prodQuantity;
+			
 			String[] row = value.toString().split(":");
 			data = row[0];
 			prodQuantity = row[1];
 			
 			dataKey.set(data);
 			prodQuantityValue.set(prodQuantity);
+			
+			System.out.println("key:" + dataKey.toString() + "|prodQty:" + prodQuantityValue.toString());
 			
 			ctx.write(dataKey, prodQuantityValue);
 		}
@@ -147,32 +149,56 @@ public class TopProductsChain extends Configured implements Tool {
 		public void reduce(Text key, Iterable<Text> values, Context context)
 				throws IOException, InterruptedException {
 			Text monthlyProducts = new Text();
-			//String mpString = "";
 			
 			for (Text value : values) {
-				//mpString = mpString + value.toString() + ", ";
-				String[] rows = value.toString().split("\t"); //TODO: check
-				String product = rows[0];
-				Integer quantity = new Integer(rows[1]);
-				countMap.put(product, quantity);
+				String product = "";
+				String quantity = "";
+				String line = value.toString();
+		        StringTokenizer tokenizer = new StringTokenizer(line);
+		        
+		        System.out.println("key:" + key);
+		        System.out.println("line:" + line);
+		        while (tokenizer.hasMoreTokens()) { //TODO
+		        	product = tokenizer.nextToken();
+		        	System.out.println("prod:" + product);
+		        	quantity = tokenizer.nextToken();
+		        	System.out.println("qty:" + quantity);
+		        }
+				
+				//String[] rows = value.toString().split("\t"); //TODO: check
+				Integer quantityInteger = new Integer(quantity);
+				System.out.println("product:" + product);
+				System.out.println("Integer:" + quantityInteger);
+				countMap.put(product, quantityInteger);
 			}
+			System.out.println(countMap.values().toString());
+			System.out.println("count keys size:" + countMap.keySet().size());
+			System.out.println("count values size:" + countMap.values().size());
+			
 			ValueComparator bvc = new ValueComparator(countMap);
 			TreeMap<String, Integer> sortedMap = new TreeMap<String, Integer>(bvc);
 			sortedMap.putAll(countMap);
 			
+			System.out.println("sorted keys size:" + sortedMap.keySet().size());
+			System.out.println("sorted values size:" + sortedMap.values().size());
+			
 			String fiveProducts = "";
 			int counter = 0;
+			
+
 			for (String keySorted : sortedMap.keySet()) {
 				if (counter == 4) { //TODO: check if 6
 					break;
 				}
-				fiveProducts = fiveProducts + keySorted + " " + sortedMap.get(keySorted);
+				fiveProducts = fiveProducts + keySorted + " " + sortedMap.get(keySorted).toString();
 				if (counter != 4) {
 					fiveProducts += ", ";
 				}
 				counter++;
+				
 			}
-			
+			System.out.println("key:" + key.toString());
+			System.out.println("fiveProd:" + fiveProducts);
 			monthlyProducts.set(fiveProducts);
 			context.write(key, monthlyProducts);
 
