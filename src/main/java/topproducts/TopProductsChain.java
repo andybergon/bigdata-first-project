@@ -126,6 +126,7 @@ public class TopProductsChain extends Configured implements Tool {
 			Text monthlyProducts = new Text();
 			String product = "x";
 			String tokenQuantity = "-1";
+			String mpString="";
 			for (Text value : values) {
 				String line = value.toString();
 				String[] lineList=line.split("\t");
@@ -133,6 +134,7 @@ public class TopProductsChain extends Configured implements Tool {
 				tokenQuantity = lineList[1];
 				int quantityInteger = Integer.parseInt(tokenQuantity);
 				countMap.put(product, quantityInteger);
+				mpString = mpString + value.toString() + ", ";
 			}
 			sortedMap=countMap.entrySet().stream()
 					.sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
@@ -157,6 +159,7 @@ public class TopProductsChain extends Configured implements Tool {
 
 			}
 			monthlyProducts.set(fiveProducts);
+			//monthlyProducts.set(mpString);
 			context.write(key, monthlyProducts);
 		}
 	}
