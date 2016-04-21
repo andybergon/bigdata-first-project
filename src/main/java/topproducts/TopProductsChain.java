@@ -218,18 +218,18 @@ public class TopProductsChain extends Configured implements Tool {
 			
 			*/
 
-			String product = "";
-			String tokenQuantity = "33";
+			String product = "x";
+			String tokenQuantity = "-1";
 						String mpString = "";
 						for (Text value : values) {
 							String line = value.toString();
-							String[] lineList=line.split("\t");
+							String[] lineList=line.split(" ");//non splitta su una sega cazzo!
 					        product = lineList[0];
 					        if(lineList.length>1){
 					        	tokenQuantity = lineList[1];
-					        	Integer quantityInteger = new Integer(tokenQuantity);
 					        }
-							mpString = mpString + product + " "+tokenQuantity+", ";
+					        if(!tokenQuantity.equals("-1"))
+					        	mpString = mpString + product + " "+tokenQuantity+", ";
 							
 						}
 						
