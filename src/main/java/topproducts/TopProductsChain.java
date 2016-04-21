@@ -117,24 +117,22 @@ public class TopProductsChain extends Configured implements Tool {
 	 * */
 
 	public static class Reducer2 extends Reducer<Text, Text, Text, Text> {
-		private Map<String, Integer> countMap = new TreeMap<String, Integer>();
-		private Map<String, Integer> sortedMap = new TreeMap<String, Integer>();
+		
 
 		@Override
 		public void reduce(Text key, Iterable<Text> values, Context context)
 				throws IOException, InterruptedException {
+			Map<String, Integer> countMap = new TreeMap<String, Integer>();
+			Map<String, Integer> sortedMap = new TreeMap<String, Integer>();
 			Text monthlyProducts = new Text();
-			String product = "x";
-			String tokenQuantity = "-1";
-			String mpString="";
+
 			for (Text value : values) {
 				String line = value.toString();
 				String[] lineList=line.split("\t");
-				product = lineList[0];
-				tokenQuantity = lineList[1];
+				String product = lineList[0];
+				String tokenQuantity = lineList[1];
 				int quantityInteger = Integer.parseInt(tokenQuantity);
 				countMap.put(product, quantityInteger);
-				mpString = mpString + value.toString() + ", ";
 			}
 			sortedMap=countMap.entrySet().stream()
 					.sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
@@ -159,10 +157,7 @@ public class TopProductsChain extends Configured implements Tool {
 
 			}
 			monthlyProducts.set(fiveProducts);
-			//monthlyProducts.set(mpString);
 			context.write(key, monthlyProducts);
-			countMap=new TreeMap<String, Integer>();
-			sortedMap=new TreeMap<String, Integer>();
 		}
 	}
 
