@@ -161,6 +161,8 @@ public class TopProductsChain extends Configured implements Tool {
 			monthlyProducts.set(fiveProducts);
 			//monthlyProducts.set(mpString);
 			context.write(key, monthlyProducts);
+			countMap=new TreeMap<String, Integer>();
+			sortedMap=new TreeMap<String, Integer>();
 		}
 	}
 
