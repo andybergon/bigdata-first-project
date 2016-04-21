@@ -4,11 +4,15 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.StringTokenizer;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
+
+import javax.swing.RowFilter.Entry;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
@@ -36,12 +40,12 @@ public class TopProductsChain extends Configured implements Tool {
 	/* Abbiamo righe in questo formato 2015-8-20,pesce,formaggio,insalata,pane
 	con il primo mapper tagliamo il giorno dalla data e formiamo righe con data,prodotto come
 	chiave e 1 come valore 
-	
+
 	2015-8-16,pesce,formaggio
 	=>
 	2015-8,pesce,1
 	2015-8,formaggio,1
-	
+
 	quindi in output abbiamo Text, IntWritable*/
 	public static class Mapper1 extends Mapper<LongWritable, Text, Text, IntWritable> {
 		private Text keyDateProduct = new Text();
@@ -88,153 +92,72 @@ public class TopProductsChain extends Configured implements Tool {
 			Text dataKey = new Text();
 			Text prodQuantityValue = new Text();
 			String data, prodQuantity;
-			
+
 			String[] row = value.toString().split(":");
-			data = row[0];
+			data = row[0]+":";
 			prodQuantity = row[1];
-			
+
 			dataKey.set(data);
 			prodQuantityValue.set(prodQuantity);
-			
+
 			System.out.println("key:" + dataKey.toString() + "|prodQty:" + prodQuantityValue.toString());
-			
+
 			ctx.write(dataKey, prodQuantityValue);
 		}
 	}
-	
+
 	/*
-	 * 2015-8:pesce 2
-	 * 2015-8:formaggio 30
+	 * key= 2015-8:
+	 * value= pesce	2
+	 * 2015-8:	pesce	2
+	 * 2015-8:	formaggio	30
 	 * =>
-	 * 2015-8:pesce 2, formaggio 30 
+	 * 2015-8:	pesce 2, formaggio 30 
 	 * 
 	 * */
-	
+
 	public static class Reducer2 extends Reducer<Text, Text, Text, Text> {
 		private Map<String, Integer> countMap = new TreeMap<String, Integer>();
-		private static final int TOP_K = 5;
-	    private class Pair {
-	        public String str;
-	        public Integer count;
-	        
-	        public Pair(String str, Integer count) {
-	          this.str = str;
-	          this.count = count;
-	        }
-	      };
-	      private PriorityQueue<Pair> queue;
-	      
-	      @Override
-	      protected void setup(Context ctx) {
-	        queue = new PriorityQueue<Pair>(TOP_K, new Comparator<Pair>() {
-	          public int compare(Pair p1, Pair p2) {
-	            return p1.count.compareTo(p2.count);
-	          }
-	        });
-	      }
-		
-		class ValueComparator implements Comparator<String> {
-		    Map<String, Integer> base;
+		private Map<String, Integer> sortedMap = new TreeMap<String, Integer>();
 
-		    public ValueComparator(Map<String, Integer> base) {
-		        this.base = base;
-		    }
-
-		    // Note: this comparator imposes orderings that are inconsistent with
-		    // equals.
-		    public int compare(String a, String b) {
-		        if (base.get(a) >= base.get(b)) { //TODO: second sort on name
-		            return -1;
-		        } else {
-		            return 1;
-		        } // returning 0 would merge keys
-		    }
-		}
-		
 		@Override
 		public void reduce(Text key, Iterable<Text> values, Context context)
 				throws IOException, InterruptedException {
 			Text monthlyProducts = new Text();
-			
-			/*for (Text value : values) {
-				String product = "";
-				String tokenQuantity = "";
-				int quantity=0;
+			String product = "x";
+			String tokenQuantity = "-1";
+			for (Text value : values) {
 				String line = value.toString();
-				//line.replaceAll(",", "");
-		        //StringTokenizer tokenizer = new StringTokenizer(line);
-		        
-		        System.out.println("key:" + key);
-		        System.out.println("line:" + line);
-		        /*String[] lineList=line.split("\t");
-		        product = lineList[0];
-		        tokenQuantity = "1";*/
-		        
-		        /*while (tokenizer.hasMoreTokens()) { //TODO
-		        	product = tokenizer.nextToken();
-		        	System.out.println("prod:" + product);
-		        	tokenQuantity = tokenizer.nextToken();
-		        	//if(tokenQuantity.equals(","))//questa quantity la vede come "," !!!!!!!!!!!!!!!
-		        	//	tokenQuantity = "1";//per fare una prova ho messo 1
-		        	System.out.println("qty:" + tokenQuantity);
-		        }
-				
-				//String[] rows = value.toString().split("\t"); //TODO: check
-				Integer quantityInteger = new Integer(tokenQuantity);//questa quantity la vede come ","
-				System.out.println("product:" + product);
-				System.out.println("Integer:" + quantityInteger);
+				String[] lineList=line.split("\t");
+				product = lineList[0];
+				tokenQuantity = lineList[1];
+				int quantityInteger = Integer.parseInt(tokenQuantity);
 				countMap.put(product, quantityInteger);
 			}
-			System.out.println(countMap.values().toString());
-			System.out.println("count keys size:" + countMap.keySet().size());
-			System.out.println("count values size:" + countMap.values().size());
-			
-			ValueComparator bvc = new ValueComparator(countMap);
-			TreeMap<String, Integer> sortedMap = new TreeMap<String, Integer>(bvc);
-			sortedMap.putAll(countMap);
-			
-			System.out.println("sorted keys size:" + sortedMap.keySet().size());
-			System.out.println("sorted values size:" + sortedMap.values().size());
-			
+			sortedMap=countMap.entrySet().stream()
+					.sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
+					.collect(Collectors.toMap(
+							Map.Entry::getKey, 
+							Map.Entry::getValue, 
+							(x,y)-> {throw new AssertionError();},
+							LinkedHashMap::new
+							));
+
 			String fiveProducts = "";
 			int counter = 0;
-			
-
 			for (String keySorted : sortedMap.keySet()) {
-				if (counter == 4) { //TODO: check if 6
+				if (counter == 5) { //TODO: check if 6
 					break;
 				}
-				fiveProducts = fiveProducts + keySorted + " " + countMap.get(keySorted).toString();//questo get restituisce null
+				fiveProducts = fiveProducts + keySorted + " " + sortedMap.get(keySorted).toString();//questo get restituisce null
 				if (counter != 4) {
 					fiveProducts += ", ";
 				}
 				counter++;
-				
+
 			}
-			System.out.println("key:" + key.toString());
-			System.out.println("fiveProd:" + fiveProducts);
 			monthlyProducts.set(fiveProducts);
 			context.write(key, monthlyProducts);
-			
-			*/
-
-			String product = "x";
-			String tokenQuantity = "-1";
-						String mpString = "";
-						for (Text value : values) {
-							String line = value.toString();
-							String[] lineList=line.split(" ");//non splitta su una sega cazzo!
-					        product = lineList[0];
-					        if(lineList.length>1){
-					        	tokenQuantity = lineList[1];
-					        }
-					        if(!tokenQuantity.equals("-1"))
-					        	mpString = mpString + product + " "+tokenQuantity+", ";
-							
-						}
-						
-						monthlyProducts.set(mpString);
-						context.write(key, monthlyProducts);
 		}
 	}
 
@@ -242,27 +165,27 @@ public class TopProductsChain extends Configured implements Tool {
 		Path input = new Path(args[0]);
 		Path output = new Path(args[1]);
 		Path temp = new Path("tmp/tmp");//questo deve essere un file nella cartella tmp!!!!! NON una cartella!
-		
+
 		Configuration conf = getConf();
 		boolean succ = false;
-		
+
 		/* JOB 1 */
 		Job job1 = new Job(conf, "top-prod-pass-1");
-		
+
 		FileInputFormat.addInputPath(job1, input);
-//		FileOutputFormat.setOutputPath(job1, output);
+		//		FileOutputFormat.setOutputPath(job1, output);
 		FileOutputFormat.setOutputPath(job1, temp);
-		
+
 		job1.setJarByClass(TopProductsChain.class);
-		
+
 		job1.setMapperClass(Mapper1.class);
 		job1.setCombinerClass(Reducer1.class);
 		job1.setReducerClass(Reducer1.class);
-		
+
 		job1.setInputFormatClass(TextInputFormat.class);
 		job1.setMapOutputKeyClass(Text.class);
 		job1.setMapOutputValueClass(IntWritable.class);
-		
+
 		succ = job1.waitForCompletion(true);
 		if (!succ) {
 			System.out.println("Job1 failed, exiting");
@@ -271,29 +194,29 @@ public class TopProductsChain extends Configured implements Tool {
 
 		/* JOB 2 */		
 		Job job2 = new Job(conf, "top-prod-pass-2");
-		
+
 		FileInputFormat.setInputPaths(job2, temp);
 		FileOutputFormat.setOutputPath(job2, output);
 		job2.setJarByClass(TopProductsChain.class);
-		
+
 		job2.setMapperClass(Mapper2.class);
-		job2.setCombinerClass(Reducer2.class);
+		//job2.setCombinerClass(Reducer2.class);
 		job2.setReducerClass(Reducer2.class);
-		
+
 		//job2.setInputFormatClass(KeyValueTextInputFormat.class);
 		job2.setInputFormatClass(TextInputFormat.class);
 		job2.setMapOutputKeyClass(Text.class);
 		job2.setMapOutputValueClass(Text.class);
-		
+
 		job2.setNumReduceTasks(1); //?
-		
+
 		succ = job2.waitForCompletion(true);
 		if (!succ) {
 			System.out.println("Job2 failed, exiting");
 			return -1;
 		}
 		/*
-		*/
+		 */
 		return 0;
 
 	}
