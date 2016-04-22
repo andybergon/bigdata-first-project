@@ -1,4 +1,28 @@
-package topproducts;
+package monthlyproductscash;
+
+import java.io.IOException;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.conf.Configured;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.Mapper.Context;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.MultipleInputs;
+import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.util.Tool;
+import org.apache.hadoop.util.ToolRunner;
+
+import topproducts.TopProductsChain;
+import topproducts.TopProductsChain.Mapper1;
+import topproducts.TopProductsChain.Mapper2;
+import topproducts.TopProductsChain.Reducer1;
+import topproducts.TopProductsChain.Reducer2;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -31,20 +55,21 @@ import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.apache.hadoop.io.Text;
 
-public class TopProductsChain extends Configured implements Tool {
+public class MonthlyProductsCash extends Configured implements Tool {
 	private static final IntWritable ONE = new IntWritable(1);
-	/* Abbiamo righe in questo formato 2015-8-20,pesce,formaggio,insalata,pane
-	con il primo mapper tagliamo il giorno dalla data e formiamo righe con data,prodotto come
-	chiave e 1 come valore 
 
-	2015-8-16,pesce,formaggio
-	=>
-	2015-8,pesce,1
-	2015-8,formaggio,1
-
-	quindi in output abbiamo Text, IntWritable*/
+	/*
+	 * Abbiamo righe in questo formato 2015-8-20,pesce,formaggio,insalata,pane
+	 * con il primo mapper tagliamo il giorno dalla data e formiamo righe con
+	 * data,prodotto come chiave e 1 come valore
+	 * 
+	 * 2015-8-16,pesce,formaggio => 2015-8,pesce,1 2015-8,formaggio,1
+	 * 
+	 * quindi in output abbiamo Text, IntWritable
+	 */
 	public static class Mapper1 extends Mapper<LongWritable, Text, Text, IntWritable> {
 		private Text keyDateProduct = new Text();
+
 		protected void map(LongWritable key, Text value, Context ctx) throws IOException, InterruptedException {
 			String line = value.toString();
 			String[] rowElements = line.split(",");
@@ -58,15 +83,15 @@ public class TopProductsChain extends Configured implements Tool {
 			}
 		}
 	}
-	/* Il primo reducer ci fa le somme quindi 
+	/* Il primo reducer ci fa le somme quindi chiave= 2015-8:pesce - valore=2
 	 * 2015-8:pesce 1  
 	 * 2015-8:pesce 1
 	 * =>
 	 * 2015-8:pesce 2
 	 */
 	public static class Reducer1 extends Reducer<Text, IntWritable, Text, IntWritable> {
-		public void reduce(Text key, Iterable<IntWritable> values,
-				Context context) throws IOException, InterruptedException {
+		public void reduce(Text key, Iterable<IntWritable> values, Context context)
+				throws IOException, InterruptedException {
 			int sum = 0;
 			for (IntWritable value : values) {
 				sum += value.get();
@@ -74,82 +99,80 @@ public class TopProductsChain extends Configured implements Tool {
 			context.write(key, new IntWritable(sum));
 		}
 	}
-	/* Questo secondo mapper deve splittare la chiave data:prodotto in data: e il valore deve diventare prodotto quantità
-	 * 2015-8:pesce 2
-	 * 2015-8:formaggio 30
-	 * => 
-	 * 2015-8: pesce 2
-	 * 2015-8: formaggio 30
+
+	/*
+	 * Questo mapper deve scrivere chiave= pesce - valore= 2015-8:2
+	 * pesce	2015-8:2
 	 */
 	public static class Mapper2 extends Mapper<LongWritable, Text, Text, Text> {
 
 		@Override
 		protected void map(LongWritable key, Text value, Context ctx) throws IOException, InterruptedException {
-			Text dataKey = new Text();
-			Text prodQuantityValue = new Text();
-			String data, prodQuantity;
+			Text ctxKey = new Text();
+			Text ctxValue = new Text();
+			String data, prodQuantity, product, quantity;
 
 			String[] row = value.toString().split(":");
-			data = row[0]+":";
+			data = row[0] + ":";
 			prodQuantity = row[1];
+			String[] rowprodQuantity = prodQuantity.split("\t");
+			product=rowprodQuantity[0];
+			quantity=rowprodQuantity[1];
 
-			dataKey.set(data);
-			prodQuantityValue.set(prodQuantity);
+			ctxKey.set(product);
+			ctxValue.set(data+quantity);
 
-			ctx.write(dataKey, prodQuantityValue);
+			ctx.write(ctxKey, ctxValue);
 		}
 	}
 
 	/*
-	 * key= 2015-8:
-	 * value= pesce	2
-	 * 2015-8:	pesce	2
-	 * 2015-8:	formaggio	30
-	 * =>
-	 * 2015-8:	pesce 2, formaggio 30 
-	 * 
-	 * */
+	 * Questo mapper deve prendere i prezzi dei prodotti chiave= pesce valore= 3
+	 * pesce,3
+	 * =>chiave= pesce valore= 3
+	 */
+	public static class MapperPrice extends Mapper<LongWritable, Text, Text, Text> {
 
-	public static class Reducer2 extends Reducer<Text, Text, Text, Text> {
-		
 		@Override
-		public void reduce(Text key, Iterable<Text> values, Context context)
-				throws IOException, InterruptedException {
-			Map<String, Integer> countMap = new TreeMap<String, Integer>();
-			Map<String, Integer> sortedMap = new TreeMap<String, Integer>();
+		protected void map(LongWritable key, Text value, Context ctx) throws IOException, InterruptedException {
+			Text ctxKey = new Text();
+			Text ctxValue = new Text();
+			String data, prodQuantity, product, quantity;
+
+			String[] row = value.toString().split(":");
+			data = row[0] + ":";
+			prodQuantity = row[1];
+			String[] rowprodQuantity = prodQuantity.split("\t");
+			product=rowprodQuantity[0];
+			quantity=rowprodQuantity[1];
+
+			ctxKey.set(product);
+			ctxValue.set(data+quantity);
+
+			ctx.write(ctxKey, ctxValue);
+		}
+	}
+
+	/*
+	 *Questo prende i due mapper  pesce	2015-8:2 e pesce,3
+	 *deve restituire per la chiave pesce la moltiplicazione tra quantità 2 e prezzo 1
+	 *pesce	2015-8:6
+	 */
+	public static class Reducer2 extends Reducer<Text, Text, Text, Text> {
+
+		@Override
+		public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
 			Text monthlyProducts = new Text();
-
+			int i=0;
 			for (Text value : values) {
-				String line = value.toString();
-				String[] lineList=line.split("\t");
-				String product = lineList[0];
-				String tokenQuantity = lineList[1];
-				int quantityInteger = Integer.parseInt(tokenQuantity);
-				countMap.put(product, quantityInteger);
-			}
-			sortedMap=countMap.entrySet().stream()
-					.sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
-					.collect(Collectors.toMap(
-							Map.Entry::getKey, 
-							Map.Entry::getValue, 
-							(x,y)-> {throw new AssertionError();},
-							LinkedHashMap::new
-							));
+					String[] row = value.toString().split(":");
+					String data=row[0];
+					int quantity = Integer.parseInt(row[1]);
 
-			String fiveProducts = "";
-			int counter = 0;
-			for (String keySorted : sortedMap.keySet()) {
-				if (counter == 5) { //TODO: check if 6
-					break;
-				}
-				fiveProducts = fiveProducts + keySorted + " " + sortedMap.get(keySorted).toString();//questo get restituisce null
-				if (counter != 4) {
-					fiveProducts += ", ";
-				}
-				counter++;
+					int price = Integer.parseInt(value.toString());
 
 			}
-			monthlyProducts.set(fiveProducts);
+			monthlyProducts.set("");
 			context.write(key, monthlyProducts);
 		}
 	}
@@ -157,13 +180,12 @@ public class TopProductsChain extends Configured implements Tool {
 	public int run(String[] args) throws Exception {
 		Path input = new Path(args[0]);
 		Path output = new Path(args[1]);
-		Path temp = new Path("tmp/tmp");//questo deve essere un file nella cartella tmp!!!!! NON una cartella!
+		Path temp = new Path("tmp/tmp");
 
-		Configuration conf = getConf();
+		Configuration conf = new Configuration();
 		boolean succ = false;
-
 		/* JOB 1 */
-		Job job1 = new Job(conf, "top-prod-pass-1");
+		Job job1 = new Job(conf, "prod-pass-1");
 
 		FileInputFormat.addInputPath(job1, input);
 		//		FileOutputFormat.setOutputPath(job1, output);
@@ -186,13 +208,15 @@ public class TopProductsChain extends Configured implements Tool {
 		}
 
 		/* JOB 2 */		
-		Job job2 = new Job(conf, "top-prod-pass-2");
+		Job job2 = new Job(conf, "prod-pass-2");
 
 		FileInputFormat.setInputPaths(job2, temp);
 		FileOutputFormat.setOutputPath(job2, output);
-		job2.setJarByClass(TopProductsChain.class);
+		job2.setJarByClass(MonthlyProductsCash.class);
 
-		job2.setMapperClass(Mapper2.class);
+		MultipleInputs.addInputPath(job2, new Path(args[0]), TextInputFormat.class, Mapper2.class);
+		MultipleInputs.addInputPath(job2, new Path(args[1]), TextInputFormat.class, MapperPrice.class);
+
 		//job2.setCombinerClass(Reducer2.class);
 		job2.setReducerClass(Reducer2.class);
 
@@ -211,11 +235,13 @@ public class TopProductsChain extends Configured implements Tool {
 		/*
 		 */
 		return 0;
-
 	}
 
 	public static void main(String[] args) throws Exception {
-		int res = ToolRunner.run(new Configuration(), new TopProductsChain(), args);
-		System.exit(res);
+
+		int ecode = ToolRunner.run(new MonthlyProductsCash(), args);
+		System.exit(ecode);
+
 	}
+
 }
