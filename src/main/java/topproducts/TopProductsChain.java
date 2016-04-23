@@ -1,17 +1,11 @@
 package topproducts;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.PriorityQueue;
-import java.util.StringTokenizer;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
-import javax.swing.RowFilter.Entry;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
@@ -21,18 +15,15 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
-import org.apache.hadoop.mapreduce.Mapper.Context;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
-import org.apache.hadoop.mapreduce.lib.input.KeyValueTextInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
-import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
-import org.apache.hadoop.io.Text;
 
 public class TopProductsChain extends Configured implements Tool {
 	private static final IntWritable ONE = new IntWritable(1);
+	
 	/* Abbiamo righe in questo formato 2015-8-20,pesce,formaggio,insalata,pane
 	con il primo mapper tagliamo il giorno dalla data e formiamo righe con data,prodotto come
 	chiave e 1 come valore 
@@ -45,6 +36,8 @@ public class TopProductsChain extends Configured implements Tool {
 	quindi in output abbiamo Text, IntWritable*/
 	public static class Mapper1 extends Mapper<LongWritable, Text, Text, IntWritable> {
 		private Text keyDateProduct = new Text();
+
+		@Override
 		protected void map(LongWritable key, Text value, Context ctx) throws IOException, InterruptedException {
 			String line = value.toString();
 			String[] rowElements = line.split(",");
@@ -58,6 +51,7 @@ public class TopProductsChain extends Configured implements Tool {
 			}
 		}
 	}
+	
 	/* Il primo reducer ci fa le somme quindi 
 	 * 2015-8:pesce 1  
 	 * 2015-8:pesce 1
@@ -65,8 +59,9 @@ public class TopProductsChain extends Configured implements Tool {
 	 * 2015-8:pesce 2
 	 */
 	public static class Reducer1 extends Reducer<Text, IntWritable, Text, IntWritable> {
-		public void reduce(Text key, Iterable<IntWritable> values,
-				Context context) throws IOException, InterruptedException {
+		@Override
+		public void reduce(Text key, Iterable<IntWritable> values, Context context)
+				throws IOException, InterruptedException {
 			int sum = 0;
 			for (IntWritable value : values) {
 				sum += value.get();
@@ -74,6 +69,7 @@ public class TopProductsChain extends Configured implements Tool {
 			context.write(key, new IntWritable(sum));
 		}
 	}
+	
 	/* Questo secondo mapper deve splittare la chiave data:prodotto in data: e il valore deve diventare prodotto quantità
 	 * 2015-8:pesce 2
 	 * 2015-8:formaggio 30
@@ -82,7 +78,6 @@ public class TopProductsChain extends Configured implements Tool {
 	 * 2015-8: formaggio 30
 	 */
 	public static class Mapper2 extends Mapper<LongWritable, Text, Text, Text> {
-
 		@Override
 		protected void map(LongWritable key, Text value, Context ctx) throws IOException, InterruptedException {
 			Text dataKey = new Text();
@@ -90,7 +85,7 @@ public class TopProductsChain extends Configured implements Tool {
 			String data, prodQuantity;
 
 			String[] row = value.toString().split(":");
-			data = row[0]+":";
+			data = row[0] + ":";
 			prodQuantity = row[1];
 
 			dataKey.set(data);
@@ -111,38 +106,35 @@ public class TopProductsChain extends Configured implements Tool {
 	 * */
 
 	public static class Reducer2 extends Reducer<Text, Text, Text, Text> {
-		
 		@Override
-		public void reduce(Text key, Iterable<Text> values, Context context)
-				throws IOException, InterruptedException {
+		public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
 			Map<String, Integer> countMap = new TreeMap<String, Integer>();
 			Map<String, Integer> sortedMap = new TreeMap<String, Integer>();
 			Text monthlyProducts = new Text();
 
 			for (Text value : values) {
 				String line = value.toString();
-				String[] lineList=line.split("\t");
+				String[] lineList = line.split("\t");
 				String product = lineList[0];
 				String tokenQuantity = lineList[1];
 				int quantityInteger = Integer.parseInt(tokenQuantity);
 				countMap.put(product, quantityInteger);
 			}
-			sortedMap=countMap.entrySet().stream()
-					.sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
-					.collect(Collectors.toMap(
-							Map.Entry::getKey, 
-							Map.Entry::getValue, 
-							(x,y)-> {throw new AssertionError();},
-							LinkedHashMap::new
-							));
+			sortedMap = countMap.entrySet().stream().sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
+					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (x, y) -> {
+						throw new AssertionError();
+					}, LinkedHashMap::new));
 
 			String fiveProducts = "";
 			int counter = 0;
 			for (String keySorted : sortedMap.keySet()) {
-				if (counter == 5) { //TODO: check if 6
+				if (counter == 5) { // TODO: check if 6
 					break;
 				}
-				fiveProducts = fiveProducts + keySorted + " " + sortedMap.get(keySorted).toString();//questo get restituisce null
+				fiveProducts = fiveProducts + keySorted + " " + sortedMap.get(keySorted).toString();// questo
+																									// get
+																									// restituisce
+																									// null
 				if (counter != 4) {
 					fiveProducts += ", ";
 				}
@@ -157,7 +149,7 @@ public class TopProductsChain extends Configured implements Tool {
 	public int run(String[] args) throws Exception {
 		Path input = new Path(args[0]);
 		Path output = new Path(args[1]);
-		Path temp = new Path("tmp/tmp");//questo deve essere un file nella cartella tmp!!!!! NON una cartella!
+		Path temp = new Path("tmp");
 
 		Configuration conf = getConf();
 		boolean succ = false;
@@ -166,7 +158,7 @@ public class TopProductsChain extends Configured implements Tool {
 		Job job1 = new Job(conf, "top-prod-pass-1");
 
 		FileInputFormat.addInputPath(job1, input);
-		//		FileOutputFormat.setOutputPath(job1, output);
+		// FileOutputFormat.setOutputPath(job1, output);
 		FileOutputFormat.setOutputPath(job1, temp);
 
 		job1.setJarByClass(TopProductsChain.class);
@@ -185,7 +177,7 @@ public class TopProductsChain extends Configured implements Tool {
 			return -1;
 		}
 
-		/* JOB 2 */		
+		/* JOB 2 */
 		Job job2 = new Job(conf, "top-prod-pass-2");
 
 		FileInputFormat.setInputPaths(job2, temp);
@@ -193,15 +185,15 @@ public class TopProductsChain extends Configured implements Tool {
 		job2.setJarByClass(TopProductsChain.class);
 
 		job2.setMapperClass(Mapper2.class);
-		//job2.setCombinerClass(Reducer2.class);
+		// job2.setCombinerClass(Reducer2.class);
 		job2.setReducerClass(Reducer2.class);
 
-		//job2.setInputFormatClass(KeyValueTextInputFormat.class);
+		// job2.setInputFormatClass(KeyValueTextInputFormat.class);
 		job2.setInputFormatClass(TextInputFormat.class);
 		job2.setMapOutputKeyClass(Text.class);
 		job2.setMapOutputValueClass(Text.class);
 
-		job2.setNumReduceTasks(1); //?
+		job2.setNumReduceTasks(1); // ?
 
 		succ = job2.waitForCompletion(true);
 		if (!succ) {
