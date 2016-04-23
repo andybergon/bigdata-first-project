@@ -139,15 +139,15 @@ public class MonthlyProductsCash extends Configured implements Tool {
 			Text ctxValue = new Text();
 			String data, prodQuantity, product, quantity;
 
-			String[] row = value.toString().split(":");
+			/*String[] row = value.toString().split(",");
 			data = row[0] + ":";
-			prodQuantity = row[1];
-			String[] rowprodQuantity = prodQuantity.split("\t");
+			prodQuantity = row[1];*/
+			String[] rowprodQuantity = value.toString().split(",");
 			product=rowprodQuantity[0];
 			quantity=rowprodQuantity[1];
 
 			ctxKey.set(product);
-			ctxValue.set(data+quantity);
+			ctxValue.set(quantity);
 
 			ctx.write(ctxKey, ctxValue);
 		}
@@ -164,22 +164,25 @@ public class MonthlyProductsCash extends Configured implements Tool {
 		public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
 			Text monthlyProducts = new Text();
 			int i=0;
+			String prova="";
 			for (Text value : values) {
-					String[] row = value.toString().split(":");
-					String data=row[0];
-					int quantity = Integer.parseInt(row[1]);
-
-					int price = Integer.parseInt(value.toString());
-
+					/*String[] row = value.toString().split(":");
+					String data=row[1];
+					int quantity = Integer.parseInt(row[2]);
+					int price = Integer.parseInt(row[0]);
+					int tot=quantity*price;
+				prova=prova+data+":"+tot+" - ";*/
+				prova=prova+value.toString()+"--";
 			}
-			monthlyProducts.set("");
+			monthlyProducts.set(prova);
 			context.write(key, monthlyProducts);
 		}
 	}
 
 	public int run(String[] args) throws Exception {
 		Path input = new Path(args[0]);
-		Path output = new Path(args[1]);
+		Path p3=new Path(args[1]);
+		Path output = new Path(args[2]);
 		Path temp = new Path("tmp/tmp");
 
 		Configuration conf = new Configuration();
@@ -208,20 +211,20 @@ public class MonthlyProductsCash extends Configured implements Tool {
 		}
 
 		/* JOB 2 */		
-		Job job2 = new Job(conf, "prod-pass-2");
+		Job job2 = new Job(conf, "top-prod-pass-2");
 
-		FileInputFormat.setInputPaths(job2, temp);
+		//FileInputFormat.setInputPaths(job2, temp);
+		MultipleInputs.addInputPath(job2, temp, TextInputFormat.class, Mapper2.class);
+		MultipleInputs.addInputPath(job2, p3, TextInputFormat.class, MapperPrice.class);
 		FileOutputFormat.setOutputPath(job2, output);
-		job2.setJarByClass(MonthlyProductsCash.class);
+		job2.setJarByClass(TopProductsChain.class);
 
-		MultipleInputs.addInputPath(job2, new Path(args[0]), TextInputFormat.class, Mapper2.class);
-		MultipleInputs.addInputPath(job2, new Path(args[1]), TextInputFormat.class, MapperPrice.class);
-
+		//job2.setMapperClass(Mapper2.class);
 		//job2.setCombinerClass(Reducer2.class);
 		job2.setReducerClass(Reducer2.class);
 
 		//job2.setInputFormatClass(KeyValueTextInputFormat.class);
-		job2.setInputFormatClass(TextInputFormat.class);
+		//job2.setInputFormatClass(TextInputFormat.class);
 		job2.setMapOutputKeyClass(Text.class);
 		job2.setMapOutputValueClass(Text.class);
 
