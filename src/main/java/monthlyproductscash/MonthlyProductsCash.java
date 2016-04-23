@@ -1,6 +1,8 @@
 package monthlyproductscash;
 
 import java.io.IOException;
+import java.util.Map;
+import java.util.TreeMap;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
@@ -10,7 +12,6 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
-import org.apache.hadoop.mapreduce.Mapper.Context;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.MultipleInputs;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
@@ -18,42 +19,6 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 
-import topproducts.TopProductsChain;
-import topproducts.TopProductsChain.Mapper1;
-import topproducts.TopProductsChain.Mapper2;
-import topproducts.TopProductsChain.Reducer1;
-import topproducts.TopProductsChain.Reducer2;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.PriorityQueue;
-import java.util.StringTokenizer;
-import java.util.TreeMap;
-import java.util.stream.Collectors;
-import javax.swing.RowFilter.Entry;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.conf.Configured;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.IntWritable;
-import org.apache.hadoop.io.LongWritable;
-import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.mapreduce.Mapper;
-import org.apache.hadoop.mapreduce.Reducer;
-import org.apache.hadoop.mapreduce.Mapper.Context;
-import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
-import org.apache.hadoop.mapreduce.lib.input.KeyValueTextInputFormat;
-import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
-import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
-import org.apache.hadoop.util.StringUtils;
-import org.apache.hadoop.util.Tool;
-import org.apache.hadoop.util.ToolRunner;
-import org.apache.hadoop.io.Text;
 
 public class MonthlyProductsCash extends Configured implements Tool {
 	private static final IntWritable ONE = new IntWritable(1);
@@ -83,6 +48,7 @@ public class MonthlyProductsCash extends Configured implements Tool {
 			}
 		}
 	}
+	
 	/* Il primo reducer ci fa le somme quindi chiave= 2015-8:pesce - valore=2
 	 * 2015-8:pesce 1  
 	 * 2015-8:pesce 1
@@ -116,11 +82,11 @@ public class MonthlyProductsCash extends Configured implements Tool {
 			data = row[0] + ":";
 			prodQuantity = row[1];
 			String[] rowprodQuantity = prodQuantity.split("\t");
-			product=rowprodQuantity[0];
-			quantity=rowprodQuantity[1];
+			product = rowprodQuantity[0];
+			quantity = rowprodQuantity[1];
 
 			ctxKey.set(product);
-			ctxValue.set(data+quantity);
+			ctxValue.set(data + quantity);
 
 			ctx.write(ctxKey, ctxValue);
 		}
@@ -137,14 +103,11 @@ public class MonthlyProductsCash extends Configured implements Tool {
 		protected void map(LongWritable key, Text value, Context ctx) throws IOException, InterruptedException {
 			Text ctxKey = new Text();
 			Text ctxValue = new Text();
-			String data, prodQuantity, product, quantity;
+			String product, quantity;
 
-			/*String[] row = value.toString().split(",");
-			data = row[0] + ":";
-			prodQuantity = row[1];*/
 			String[] rowprodQuantity = value.toString().split(",");
-			product=rowprodQuantity[0];
-			quantity=rowprodQuantity[1];
+			product = rowprodQuantity[0];
+			quantity = rowprodQuantity[1];
 
 			ctxKey.set(product);
 			ctxValue.set(quantity);
@@ -163,60 +126,74 @@ public class MonthlyProductsCash extends Configured implements Tool {
 		@Override
 		public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
 			Text monthlyProducts = new Text();
-			String prova="";
-			int price=0;
-			int quantity=0;
-			Map<String, Integer> data2Quantity = new TreeMap<String, Integer>();
+			String output = "";
+			int price = 0;
+			int quantity = 0;
+			Map<String, Integer> date2Quantity = new TreeMap<String, Integer>();
+
 			for (Text value : values) {
 				String[] row = value.toString().split(":");
-				if(row.length==1){
+				if (row.length == 1) {
 					price = Integer.parseInt(value.toString());
-					
-				}
-				else{
-					
-					String data=row[0];
+				} else {
+					String data = row[0];
 					quantity = Integer.parseInt(row[1]);
-					data2Quantity.put(data, quantity);
-					//prova=prova+"|data="+data+"|:|quantity="+quantity+"|";
+					date2Quantity.put(data, quantity);
+					// prova=prova+"|data="+data+"|:|quantity="+quantity+"|";
 				}
-				//int tot=price*quantity;
+				// int tot=price*quantity;
 
-				//prova=prova+"tot="+tot+"|";
-					/*String[] row = value.toString().split(":");
-					String data=row[1];
-					int quantity = Integer.parseInt(row[2]);
-					int price = Integer.parseInt(row[0]);
-					int tot=quantity*price;
-				prova=prova+data+":"+tot+" - ";*/
-				//prova=prova+value.toString()+"--";
+				// prova=prova+"tot="+tot+"|";
+				/*
+				 * String[] row = value.toString().split(":"); String
+				 * data=row[1]; int quantity = Integer.parseInt(row[2]); int
+				 * price = Integer.parseInt(row[0]); int tot=quantity*price;
+				 * prova=prova+data+":"+tot+" - ";
+				 */
+				// prova=prova+value.toString()+"--";
 			}
-			if(price!=0){
-				for(String k:data2Quantity.keySet()){
-					prova=prova+"|"+k+":"+(data2Quantity.get(k)*price);
+			
+			if (price != 0) {
+				for (String date : date2Quantity.keySet()) {
+					String totalPrice = String.valueOf(date2Quantity.get(date) * price);
+					String productTotal = formatDate(date) + ":" + totalPrice + " ";
+					output += productTotal;
 				}
 			}
-			monthlyProducts.set(prova);
+			monthlyProducts.set(output);
 			context.write(key, monthlyProducts);
+		}
+		
+		private String formatDate(String date) {
+			String formattedDate;
+
+			String[] dateSplitted = date.split("-");
+			String year = dateSplitted[0];
+			String month = dateSplitted[1];
+
+			formattedDate = month + "/" + year;
+
+			return formattedDate;
 		}
 	}
 
 	public int run(String[] args) throws Exception {
 		Path input = new Path(args[0]);
-		Path p3=new Path(args[1]);
+		Path prices = new Path(args[1]);
 		Path output = new Path(args[2]);
-		Path temp = new Path("tmp/tmp");
+		Path temp = new Path("tmp");
 
 		Configuration conf = new Configuration();
 		boolean succ = false;
+
 		/* JOB 1 */
 		Job job1 = new Job(conf, "prod-pass-1");
 
 		FileInputFormat.addInputPath(job1, input);
-		//		FileOutputFormat.setOutputPath(job1, output);
+		// FileOutputFormat.setOutputPath(job1, output);
 		FileOutputFormat.setOutputPath(job1, temp);
 
-		job1.setJarByClass(TopProductsChain.class);
+		job1.setJarByClass(MonthlyProductsCash.class);
 
 		job1.setMapperClass(Mapper1.class);
 		job1.setCombinerClass(Reducer1.class);
@@ -232,25 +209,25 @@ public class MonthlyProductsCash extends Configured implements Tool {
 			return -1;
 		}
 
-		/* JOB 2 */		
+		/* JOB 2 */
 		Job job2 = new Job(conf, "top-prod-pass-2");
 
-		//FileInputFormat.setInputPaths(job2, temp);
+		// FileInputFormat.setInputPaths(job2, temp);
 		MultipleInputs.addInputPath(job2, temp, TextInputFormat.class, Mapper2.class);
-		MultipleInputs.addInputPath(job2, p3, TextInputFormat.class, MapperPrice.class);
+		MultipleInputs.addInputPath(job2, prices, TextInputFormat.class, MapperPrice.class);
 		FileOutputFormat.setOutputPath(job2, output);
-		job2.setJarByClass(TopProductsChain.class);
+		job2.setJarByClass(MonthlyProductsCash.class);
 
-		//job2.setMapperClass(Mapper2.class);
-		//job2.setCombinerClass(Reducer2.class);
+		// job2.setMapperClass(Mapper2.class);
+		// job2.setCombinerClass(Reducer2.class);
 		job2.setReducerClass(Reducer2.class);
 
-		//job2.setInputFormatClass(KeyValueTextInputFormat.class);
-		//job2.setInputFormatClass(TextInputFormat.class);
+		// job2.setInputFormatClass(KeyValueTextInputFormat.class);
+		// job2.setInputFormatClass(TextInputFormat.class);
 		job2.setMapOutputKeyClass(Text.class);
 		job2.setMapOutputValueClass(Text.class);
 
-		job2.setNumReduceTasks(1); //?
+		job2.setNumReduceTasks(1); // ?
 
 		succ = job2.waitForCompletion(true);
 		if (!succ) {
