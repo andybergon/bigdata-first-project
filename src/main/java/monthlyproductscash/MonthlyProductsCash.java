@@ -163,16 +163,38 @@ public class MonthlyProductsCash extends Configured implements Tool {
 		@Override
 		public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
 			Text monthlyProducts = new Text();
-			int i=0;
 			String prova="";
+			int price=0;
+			int quantity=0;
+			Map<String, Integer> data2Quantity = new TreeMap<String, Integer>();
 			for (Text value : values) {
+				String[] row = value.toString().split(":");
+				if(row.length==1){
+					price = Integer.parseInt(value.toString());
+					
+				}
+				else{
+					
+					String data=row[0];
+					quantity = Integer.parseInt(row[1]);
+					data2Quantity.put(data, quantity);
+					//prova=prova+"|data="+data+"|:|quantity="+quantity+"|";
+				}
+				//int tot=price*quantity;
+
+				//prova=prova+"tot="+tot+"|";
 					/*String[] row = value.toString().split(":");
 					String data=row[1];
 					int quantity = Integer.parseInt(row[2]);
 					int price = Integer.parseInt(row[0]);
 					int tot=quantity*price;
 				prova=prova+data+":"+tot+" - ";*/
-				prova=prova+value.toString()+"--";
+				//prova=prova+value.toString()+"--";
+			}
+			if(price!=0){
+				for(String k:data2Quantity.keySet()){
+					prova=prova+"|"+k+":"+(data2Quantity.get(k)*price);
+				}
 			}
 			monthlyProducts.set(prova);
 			context.write(key, monthlyProducts);
