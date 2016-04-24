@@ -23,7 +23,7 @@ import org.apache.hadoop.util.ToolRunner;
 
 public class TopProductsChain extends Configured implements Tool {
 	private static final IntWritable ONE = new IntWritable(1);
-	
+
 	/* Abbiamo righe in questo formato 2015-8-20,pesce,formaggio,insalata,pane
 	con il primo mapper tagliamo il giorno dalla data e formiamo righe con data,prodotto come
 	chiave e 1 come valore 
@@ -42,9 +42,7 @@ public class TopProductsChain extends Configured implements Tool {
 			String line = value.toString();
 			String[] rowElements = line.split(",");
 			String dateFormatted = rowElements[0].substring(0, 7);
-			if (dateFormatted.lastIndexOf("-") == 6) {
-				dateFormatted = dateFormatted.substring(0, 6);
-			}
+
 			for (int i = 1; i < rowElements.length; i++) {
 				keyDateProduct.set(dateFormatted + ":" + rowElements[i]);
 				ctx.write(keyDateProduct, ONE);
@@ -131,10 +129,7 @@ public class TopProductsChain extends Configured implements Tool {
 				if (counter == 5) { // TODO: check if 6
 					break;
 				}
-				fiveProducts = fiveProducts + keySorted + " " + sortedMap.get(keySorted).toString();// questo
-																									// get
-																									// restituisce
-																									// null
+				fiveProducts = fiveProducts + keySorted + " " + sortedMap.get(keySorted).toString();
 				if (counter != 4) {
 					fiveProducts += ", ";
 				}
@@ -145,7 +140,7 @@ public class TopProductsChain extends Configured implements Tool {
 			context.write(key, monthlyProducts);
 		}
 	}
-
+	
 	public int run(String[] args) throws Exception {
 		Path input = new Path(args[0]);
 		Path output = new Path(args[1]);
@@ -158,7 +153,6 @@ public class TopProductsChain extends Configured implements Tool {
 		Job job1 = new Job(conf, "top-prod-pass-1");
 
 		FileInputFormat.addInputPath(job1, input);
-		// FileOutputFormat.setOutputPath(job1, output);
 		FileOutputFormat.setOutputPath(job1, temp);
 
 		job1.setJarByClass(TopProductsChain.class);
@@ -168,6 +162,7 @@ public class TopProductsChain extends Configured implements Tool {
 		job1.setReducerClass(Reducer1.class);
 
 		job1.setInputFormatClass(TextInputFormat.class);
+
 		job1.setMapOutputKeyClass(Text.class);
 		job1.setMapOutputValueClass(IntWritable.class);
 
@@ -190,6 +185,7 @@ public class TopProductsChain extends Configured implements Tool {
 
 		// job2.setInputFormatClass(KeyValueTextInputFormat.class);
 		job2.setInputFormatClass(TextInputFormat.class);
+
 		job2.setMapOutputKeyClass(Text.class);
 		job2.setMapOutputValueClass(Text.class);
 
@@ -200,8 +196,7 @@ public class TopProductsChain extends Configured implements Tool {
 			System.out.println("Job2 failed, exiting");
 			return -1;
 		}
-		/*
-		 */
+
 		return 0;
 
 	}

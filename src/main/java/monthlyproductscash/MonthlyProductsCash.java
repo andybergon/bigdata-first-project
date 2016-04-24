@@ -9,6 +9,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.WritableComparator;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
@@ -39,9 +40,7 @@ public class MonthlyProductsCash extends Configured implements Tool {
 			String line = value.toString();
 			String[] rowElements = line.split(",");
 			String dateFormatted = rowElements[0].substring(0, 7);
-			if (dateFormatted.lastIndexOf("-") == 6) {
-				dateFormatted = dateFormatted.substring(0, 6);
-			}
+
 			for (int i = 1; i < rowElements.length; i++) {
 				keyDateProduct.set(dateFormatted + ":" + rowElements[i]);
 				ctx.write(keyDateProduct, ONE);
@@ -152,7 +151,7 @@ public class MonthlyProductsCash extends Configured implements Tool {
 				 */
 				// prova=prova+value.toString()+"--";
 			}
-			
+
 			if (price != 0) {
 				for (String date : date2Quantity.keySet()) {
 					String totalPrice = String.valueOf(date2Quantity.get(date) * price);
@@ -163,7 +162,7 @@ public class MonthlyProductsCash extends Configured implements Tool {
 			monthlyProducts.set(output);
 			context.write(key, monthlyProducts);
 		}
-		
+
 		private String formatDate(String date) {
 			String formattedDate;
 
@@ -190,7 +189,6 @@ public class MonthlyProductsCash extends Configured implements Tool {
 		Job job1 = new Job(conf, "prod-pass-1");
 
 		FileInputFormat.addInputPath(job1, input);
-		// FileOutputFormat.setOutputPath(job1, output);
 		FileOutputFormat.setOutputPath(job1, temp);
 
 		job1.setJarByClass(MonthlyProductsCash.class);
@@ -200,6 +198,7 @@ public class MonthlyProductsCash extends Configured implements Tool {
 		job1.setReducerClass(Reducer1.class);
 
 		job1.setInputFormatClass(TextInputFormat.class);
+
 		job1.setMapOutputKeyClass(Text.class);
 		job1.setMapOutputValueClass(IntWritable.class);
 
@@ -212,18 +211,19 @@ public class MonthlyProductsCash extends Configured implements Tool {
 		/* JOB 2 */
 		Job job2 = new Job(conf, "top-prod-pass-2");
 
-		// FileInputFormat.setInputPaths(job2, temp);
 		MultipleInputs.addInputPath(job2, temp, TextInputFormat.class, Mapper2.class);
 		MultipleInputs.addInputPath(job2, prices, TextInputFormat.class, MapperPrice.class);
 		FileOutputFormat.setOutputPath(job2, output);
+		
 		job2.setJarByClass(MonthlyProductsCash.class);
 
 		// job2.setMapperClass(Mapper2.class);
 		// job2.setCombinerClass(Reducer2.class);
 		job2.setReducerClass(Reducer2.class);
-
+		
 		// job2.setInputFormatClass(KeyValueTextInputFormat.class);
 		// job2.setInputFormatClass(TextInputFormat.class);
+		
 		job2.setMapOutputKeyClass(Text.class);
 		job2.setMapOutputValueClass(Text.class);
 
@@ -234,8 +234,7 @@ public class MonthlyProductsCash extends Configured implements Tool {
 			System.out.println("Job2 failed, exiting");
 			return -1;
 		}
-		/*
-		 */
+
 		return 0;
 	}
 
