@@ -139,18 +139,7 @@ public class MonthlyProductsCash extends Configured implements Tool {
 					String data = row[0];
 					quantity = Integer.parseInt(row[1]);
 					date2Quantity.put(data, quantity);
-					// prova=prova+"|data="+data+"|:|quantity="+quantity+"|";
 				}
-				// int tot=price*quantity;
-
-				// prova=prova+"tot="+tot+"|";
-				/*
-				 * String[] row = value.toString().split(":"); String
-				 * data=row[1]; int quantity = Integer.parseInt(row[2]); int
-				 * price = Integer.parseInt(row[0]); int tot=quantity*price;
-				 * prova=prova+data+":"+tot+" - ";
-				 */
-				// prova=prova+value.toString()+"--";
 			}
 
 			if (price != 0) {
@@ -229,8 +218,6 @@ public class MonthlyProductsCash extends Configured implements Tool {
 		
 		job2.setMapOutputKeyClass(Text.class);
 		job2.setMapOutputValueClass(Text.class);
-
-		job2.setNumReduceTasks(1); // ?
 
 		succ = job2.waitForCompletion(true);
 

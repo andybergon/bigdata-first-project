@@ -152,7 +152,7 @@ public class TopProductsChain extends Configured implements Tool {
 		boolean succ = false;
 
 		/* JOB 1 */
-		Job job1 = new Job(conf, "top-prod-pass-1");
+		Job job1 = new Job(conf, TopProductsChain.class.getSimpleName() + "2");
 
 		FileInputFormat.addInputPath(job1, input);
 		FileOutputFormat.setOutputPath(job1, temp);
@@ -177,7 +177,7 @@ public class TopProductsChain extends Configured implements Tool {
 		}
 
 		/* JOB 2 */
-		Job job2 = new Job(conf, "top-prod-pass-2");
+		Job job2 = new Job(conf, TopProductsChain.class.getSimpleName() + "2");
 
 		FileInputFormat.setInputPaths(job2, temp);
 		FileOutputFormat.setOutputPath(job2, output);
@@ -192,8 +192,6 @@ public class TopProductsChain extends Configured implements Tool {
 
 		job2.setMapOutputKeyClass(Text.class);
 		job2.setMapOutputValueClass(Text.class);
-
-		job2.setNumReduceTasks(1); // ?
 
 		succ = job2.waitForCompletion(true);
 
