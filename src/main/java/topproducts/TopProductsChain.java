@@ -21,6 +21,8 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 
+import util.DurationFormatter;
+
 public class TopProductsChain extends Configured implements Tool {
 	private static final IntWritable ONE = new IntWritable(1);
 
@@ -166,6 +168,8 @@ public class TopProductsChain extends Configured implements Tool {
 		job1.setMapOutputKeyClass(Text.class);
 		job1.setMapOutputValueClass(IntWritable.class);
 
+		long startTime = System.currentTimeMillis();
+		
 		succ = job1.waitForCompletion(true);
 		if (!succ) {
 			System.out.println("Job1 failed, exiting");
@@ -192,12 +196,19 @@ public class TopProductsChain extends Configured implements Tool {
 		job2.setNumReduceTasks(1); // ?
 
 		succ = job2.waitForCompletion(true);
-		if (!succ) {
-			System.out.println("Job2 failed, exiting");
-			return -1;
-		}
 
-		return 0;
+		long endTime = System.currentTimeMillis();
+		long elapsedTime = endTime - startTime;
+
+		String formattedElapsedTime = DurationFormatter.formatDuration(elapsedTime);
+
+		if (!succ) {
+			System.out.println("Job FAILED after " + formattedElapsedTime);
+			return -1;
+		} else {
+			System.out.println("Job COMPLETED in " + formattedElapsedTime);
+			return 0;
+		}
 
 	}
 
