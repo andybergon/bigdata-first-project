@@ -12,8 +12,8 @@ LOAD DATA INPATH '/input/spesa.txt' INTO TABLE receipt;
 -- LOAD DATA LOCAL INPATH '/home/andybergon/Desktop/hive-top_products/spesa.txt' INTO TABLE receipt;
 
 
--- add jar <to_be_defined>;
--- CREATE TEMPORARY FUNCTION <a> AS 'hive.ClasseUtile';
+-- add jar PrimoProgetto-0.0.1-SNAPSHOT.jar;
+-- CREATE TEMPORARY FUNCTION <a> AS 'hive.topproducts.TopProducts';
 
 SELECT date, product, COUNT(product) AS quantity
 FROM receipt
