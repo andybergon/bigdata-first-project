@@ -1,4 +1,4 @@
-package topproducts;
+package mapreduce.topproducts;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;

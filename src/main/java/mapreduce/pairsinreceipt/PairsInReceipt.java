@@ -1,4 +1,4 @@
-package pairsinreceipt;
+package mapreduce.pairsinreceipt;
 
 import java.io.IOException;
 import java.text.DecimalFormat;

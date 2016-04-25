@@ -1,4 +1,4 @@
-package monthlyproductscash;
+package mapreduce.monthlyproductscash;
 
 import java.io.IOException;
 import java.util.Map;
