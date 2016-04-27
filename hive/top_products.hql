@@ -1,22 +1,24 @@
-# date - item
-# 2015-02-11  pane
-# 2015-02-11  formaggio
-# 2015-09-28  pesce
+DROP TABLE products;
+DROP TABLE dateproduct;
 
-# come popolo la tabella? serve classe java?
-CREATE TABLE IF NOT EXISTS receipt (
-  date DATE,
-  item STRING
-  ) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',';
-LOAD DATA INPATH '/input/spesa.txt' INTO TABLE receipt;
--- LOAD DATA LOCAL INPATH '/home/andybergon/Desktop/hive-top_products/spesa.txt' INTO TABLE receipt;
+CREATE TABLE products (data STRING, list Array<STRING>) row format delimited
+fields terminated by ':'
+collection items terminated by ',';
 
+--LOAD DATA INPATH '/input/spesa.txt' INTO TABLE receipt
+LOAD DATA local INPATH '/home/luca/Desktop/hive/spesa10^6.txt'
+OVERWRITE INTO TABLE products;
 
--- add jar PrimoProgetto-0.0.1-SNAPSHOT.jar;
--- CREATE TEMPORARY FUNCTION <a> AS 'hive.topproducts.TopProducts';
+CREATE TABLE dateproduct AS
+SELECT x.data, x.coll[0], x.coll[1], x.coll[2], x.coll[3], x.coll[4]
+FROM (SELECT s.data AS data, collect_set(CONCAT(s.prod," ",s.count)) AS coll
+    FROM (SELECT date_format(w.data, "yyyy-MM") as data, w.prod, count(1) AS count 
+        FROM (SELECT data, prod
+            FROM products LATERAL VIEW explode(list) subA AS prod) w
+        GROUP BY data, w.prod
+        ORDER BY data, count DESC, w.prod) s
+    GROUP BY s.data) x;
 
-SELECT date, product, COUNT(product) AS quantity
-FROM receipt
-GROUP BY date
-SORT BY quantity DESC
-LIMIT 5;
+-- stampa
+SELECT *
+FROM dateproduct;

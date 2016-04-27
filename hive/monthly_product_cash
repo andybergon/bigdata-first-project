@@ -1,0 +1,26 @@
+DROP TABLE receipts;
+DROP TABLE prices;
+
+CREATE TABLE receipts (data STRING, list Array<STRING>) row format delimited
+fields terminated by ':'
+collection items terminated by ',';
+
+LOAD DATA local INPATH '/home/luca/Desktop/hive/spesa.txt'
+OVERWRITE INTO TABLE receipts;
+
+CREATE TABLE prices (product STRING, price STRING) row format delimited
+fields terminated by ',';
+
+LOAD DATA local INPATH '/home/luca/Desktop/hive/prices.txt'
+OVERWRITE INTO TABLE prices;
+
+SELECT x.data AS data, x.prod AS prod, x.count*x.price AS tot
+FROM (SELECT date_format(w.data, "yyyy-MM") AS data, w.prod AS prod, count(1) AS count, price
+        FROM (SELECT data, prod
+            FROM receipts LATERAL VIEW explode(list) subA AS prod) w JOIN prices ON prod=product
+        GROUP BY data, w.prod, price
+        ORDER BY data, count DESC, w.prod) x;
+      
+-- SELECT y.prod, collect_set(CONCAT(y.data," ",y.tot)) AS coll
+-- FROM ( 
+-- GROUP BY prod
