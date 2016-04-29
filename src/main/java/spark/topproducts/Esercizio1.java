@@ -13,8 +13,11 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.commons.io.FileUtils;
@@ -29,11 +32,17 @@ public class Esercizio1 implements Serializable{
         if (args.length < 1) {
             System.exit(1);
         }
+        
+        long startDate = new Date().getTime();
+        
         Esercizio1 wc = new Esercizio1(args[0]);        
         JavaPairRDD<String, List<Tuple2<String,Integer>>> result =wc.aggregate();
-        
+        long endDate = new Date().getTime();
+		System.out.println("Job took "+(TimeUnit.MILLISECONDS.toMillis(endDate-startDate)) + " milliseconds");
+		
         File sparkoutput = new File("/home/luca/Desktop/sparkoutput");
         deleteFile(sparkoutput);
+        FileUtils.deleteDirectory(sparkoutput);
         result.saveAsTextFile("/home/luca/Desktop/sparkoutput"); //saveAsTextFile crea una NUOVA directory!!!
     }
     
