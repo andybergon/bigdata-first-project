@@ -17,6 +17,8 @@ import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang.StringUtils;
 import org.apache.spark.api.java.function.Function2;
+import org.apache.commons.io.FileUtils;
+
 public class Esercizio1 implements Serializable{
     private static String pathToFile;
     private static final long serialVersionUID = 1L;
@@ -29,8 +31,20 @@ public class Esercizio1 implements Serializable{
         }
         Esercizio1 wc = new Esercizio1(args[0]);        
         JavaPairRDD<String, List<Tuple2<String,Integer>>> result =wc.aggregate();
+        
+        File sparkoutput = new File("/home/luca/Desktop/sparkoutput");
+        deleteFile(sparkoutput);
         result.saveAsTextFile("/home/luca/Desktop/sparkoutput"); //saveAsTextFile crea una NUOVA directory!!!
     }
+    
+    public static void deleteFile(File element) {
+    	   if (element.isDirectory()) {
+    	       for (File sub : element.listFiles()) {
+    	           deleteFile(sub);
+    	       }
+    	   }
+    	   element.delete();
+    	}
     /**
      *  Load the data from the text file and return an RDD of words
      */
@@ -85,7 +99,7 @@ public class Esercizio1 implements Serializable{
                 List<Tuple2<String,Integer>> lista = new ArrayList<Tuple2<String,Integer>>();
                 for(String item_count : s._2.split(", ")){
                     String item = item_count.split(" ")[0]; //prodotto
-                    int count = Integer.parseInt(item_count.split(" ")[1].replace(")", "")); //contatore
+                    int count = Integer.parseInt(item_count.split(" ")[1]); //contatore
                     lista.add(new Tuple2<>(item,count));
                 }
                 lista.sort(new Comparator<Tuple2<String,Integer>>(){
