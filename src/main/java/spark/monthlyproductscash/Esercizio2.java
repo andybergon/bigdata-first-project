@@ -55,9 +55,6 @@ public class Esercizio2 implements Serializable {
 		deleteFile(sparkoutput);
 		FileUtils.deleteDirectory(sparkoutput);
 
-		join.saveAsTextFile(outputFolderPath);
-		sc.close();
-
 		long endTime = System.currentTimeMillis();
 		long elapsedTime = endTime - startTime;
 
@@ -65,6 +62,9 @@ public class Esercizio2 implements Serializable {
 		System.out.println("##########################################################");
 		System.out.println("Job COMPLETED in " + formattedElapsedTime);
 		System.out.println("##########################################################");
+
+		join.saveAsTextFile(outputFolderPath);
+		sc.close();
 	}
 
 	public static void deleteFile(File element) {

@@ -38,19 +38,19 @@ public class Esercizio1 implements Serializable {
 
 		JavaPairRDD<String, List<Tuple2<String, Integer>>> result = wc.aggregate();
 
+		long endTime = System.currentTimeMillis();
+		long elapsedTime = endTime - startTime;
+		
+		String formattedElapsedTime = DurationFormatter.formatDuration(elapsedTime);
+		System.out.println("##########################################################");
+		System.out.println("Job COMPLETED in " + formattedElapsedTime);
+		System.out.println("##########################################################");
+		
 		File sparkoutput = new File(outputFolderPath);
 		deleteFile(sparkoutput);
 		FileUtils.deleteDirectory(sparkoutput);
 
 		result.saveAsTextFile(outputFolderPath); //saveAsTextFile crea una NUOVA directory!!!
-
-		long endTime = System.currentTimeMillis();
-		long elapsedTime = endTime - startTime;
-
-		String formattedElapsedTime = DurationFormatter.formatDuration(elapsedTime);
-		System.out.println("##########################################################");
-		System.out.println("Job COMPLETED in " + formattedElapsedTime);
-		System.out.println("##########################################################");
 	}
 
 	public static void deleteFile(File element) {
