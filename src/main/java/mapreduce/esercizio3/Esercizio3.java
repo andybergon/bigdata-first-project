@@ -1,4 +1,4 @@
-package mapreduce.pairsinreceipt;
+package mapreduce.esercizio3;
 
 import java.io.IOException;
 import java.text.DecimalFormat;
@@ -21,7 +21,7 @@ import org.apache.hadoop.util.ToolRunner;
 
 import util.DurationFormatter;
 
-public class PairsInReceipt extends Configured implements Tool {
+public class Esercizio3 extends Configured implements Tool {
 
 	/*
 	 * 2015-01 a,b,c
@@ -160,8 +160,8 @@ public class PairsInReceipt extends Configured implements Tool {
 		Path output = new Path(args[1]);
 
 		Job job = new Job(getConf());
-		job.setJobName(PairsInReceipt.class.getSimpleName());
-		job.setJarByClass(PairsInReceipt.class);
+		job.setJobName(Esercizio3.class.getSimpleName());
+		job.setJarByClass(Esercizio3.class);
 
 		FileInputFormat.addInputPath(job, input);
 		FileOutputFormat.setOutputPath(job, output);
@@ -192,7 +192,7 @@ public class PairsInReceipt extends Configured implements Tool {
 	}
 
 	public static void main(String[] args) throws Exception {
-		int res = ToolRunner.run(new Configuration(), new PairsInReceipt(), args);
+		int res = ToolRunner.run(new Configuration(), new Esercizio3(), args);
 		System.exit(res);
 	}
 

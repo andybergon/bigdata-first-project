@@ -1,4 +1,4 @@
-package spark.pairsinreceipt;
+package spark.esercizio3;
 
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;

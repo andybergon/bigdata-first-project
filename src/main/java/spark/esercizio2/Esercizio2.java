@@ -1,4 +1,4 @@
-package spark.monthlyproductscash;
+package spark.esercizio2;
 
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;

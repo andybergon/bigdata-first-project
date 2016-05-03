@@ -1,4 +1,4 @@
-package spark.topproducts;
+package spark.esercizio1;
 
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
@@ -19,7 +19,7 @@ import org.apache.commons.io.FileUtils;
 public class Esercizio1 implements Serializable {
 	private static final long serialVersionUID = 1L;
 
-	private String pathToFile;
+	private static String pathToFile;
 
 	public Esercizio1(String file) {
 		this.pathToFile = file;
