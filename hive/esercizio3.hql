@@ -7,7 +7,9 @@ fields terminated by ':'
 collection items terminated by ',';
 
 -- LOAD DATA local INPATH '/home/luca/Desktop/hive/spesa.txt'
-LOAD DATA INPATH '/input/hive/spesa.txt'
+-- LOAD DATA INPATH '/input/hive/spesa.txt'
+
+LOAD DATA local INPATH '$HOME/input/hive/spesa.txt'
 OVERWRITE INTO TABLE receipts1;
 
 CREATE TABLE receipts
@@ -37,3 +39,6 @@ JOIN (SELECT prod, count(1) AS occurency
       GROUP BY prod) v
 ON f.prod1=v.prod;
 
+-- stampa
+SELECT *
+FROM pairs_in_receipt;

@@ -5,8 +5,11 @@ CREATE TABLE products (data STRING, list Array<STRING>) row format delimited
 fields terminated by ':'
 collection items terminated by ',';
 
---LOAD DATA local INPATH '/home/luca/Desktop/hive/spesa.txt'
-LOAD DATA INPATH '/input/hive/spesa.txt'
+
+-- LOAD DATA local INPATH '/home/luca/Desktop/hive/spesa.txt'
+-- LOAD DATA INPATH 'input/hive/spesa.txt'
+
+LOAD DATA local INPATH '$HOME/input/hive/spesa.txt'
 OVERWRITE INTO TABLE products;
 
 
