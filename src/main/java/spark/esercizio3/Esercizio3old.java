@@ -34,7 +34,7 @@ public class Esercizio3old implements Serializable{
         SparkConf conf = new SparkConf()
         .setAppName("Esercizio3");
         JavaSparkContext sc = new JavaSparkContext(conf);
-        Esercizio3 wc = new Esercizio3(args[0]); 
+        Esercizio3old wc = new Esercizio3old(args[0]); 
         rowsNumber = (int)countRows(sc); //vedere come fare il parsing
         //System.out.println("countRows: "+rowsNumber);
         JavaPairRDD<String, String> result = wc.computeJoin(sc);
