@@ -9,7 +9,7 @@ collection items terminated by ',';
 -- LOAD DATA local INPATH '/home/luca/Desktop/hive/spesa.txt'
 -- LOAD DATA INPATH 'input/hive/spesa.txt'
 
-LOAD DATA local INPATH '$HOME/input/hive/spesa.txt'
+LOAD DATA local INPATH '/pico/home/usertrain/a08trb02/input/hive/spesa.txt'
 OVERWRITE INTO TABLE receipts;
 
 CREATE TABLE prices (product STRING, price STRING) row format delimited
