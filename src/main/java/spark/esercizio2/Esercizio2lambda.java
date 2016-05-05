@@ -42,13 +42,6 @@
 //		Esercizio2lambda wc = new Esercizio2lambda(args[0], args[1]);
 //		String outputFolderPath = args[2];
 //
-//		//        JavaPairRDD<String,Integer> resultPrice = wc.loadPrices(sc);
-//		//        resultPrice.saveAsTextFile("/Users/Simone/Desktop/sparkPrices");
-//		//        JavaPairRDD<String, List<Tuple2<String,Integer>>> result =wc.aggregate(sc);
-//		//        File sparkoutput = new File("/Users/Simone/Desktop/sparkoutput");
-//		//        deleteFile(sparkoutput);
-//		//        result.saveAsTextFile("/Users/Simone/Desktop/sparkoutput"); 
-//
 //		JavaPairRDD<String, List<Tuple2<String, Integer>>> join = wc.computeJoin(sc);
 //
 //		File sparkoutput = new File(outputFolderPath);

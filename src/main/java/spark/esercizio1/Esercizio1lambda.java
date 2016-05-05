@@ -40,12 +40,12 @@
 //
 //		long endTime = System.currentTimeMillis();
 //		long elapsedTime = endTime - startTime;
-//		
+//
 //		String formattedElapsedTime = DurationFormatter.formatDuration(elapsedTime);
 //		System.out.println("##########################################################");
 //		System.out.println("Job COMPLETED in " + formattedElapsedTime);
 //		System.out.println("##########################################################");
-//		
+//
 //		File sparkoutput = new File(outputFolderPath);
 //		deleteFile(sparkoutput);
 //		FileUtils.deleteDirectory(sparkoutput);
@@ -99,14 +99,14 @@
 //		JavaSparkContext sc = new JavaSparkContext(conf);
 //
 //		JavaPairRDD<String, Integer> ones = sc.textFile(this.pathToFile).flatMapToPair(rec -> {
-//			
+//
 //			List<Tuple2<String, Integer>> results = new ArrayList<Tuple2<String, Integer>>();
 //			String[] tokens = StringUtils.split(rec, ",");
-//			
+//
 //			for (int i = 1; i < tokens.length; i++) {
 //				results.add(new Tuple2<String, Integer>(tokens[0].substring(0, 7) + "," + tokens[i], 1));
 //			}
-//			
+//
 //			return results;
 //		});
 //
