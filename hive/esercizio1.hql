@@ -10,7 +10,7 @@ collection items terminated by ',';
 -- LOAD DATA INPATH 'input/hive/spesa.txt'
 -- LOAD DATA local INPATH '/pico/home/usertrain/a08trb02/input/hive/spesa.txt'
 
--- LOAD DATA local INPATH '/home/andybergon/input/hive/spesa.txt'
+LOAD DATA local INPATH '/home/andybergon/input/hive/spesa.txt'
 OVERWRITE INTO TABLE products;
 
 
