@@ -1,11 +1,13 @@
 package mapreduce.esercizio1;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.stream.Collectors;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
@@ -29,12 +31,12 @@ public class Esercizio1 extends Configured implements Tool {
 	/* Abbiamo righe in questo formato 2015-8-20,pesce,formaggio,insalata,pane
 	con il primo mapper tagliamo il giorno dalla data e formiamo righe con data,prodotto come
 	chiave e 1 come valore 
-
+	
 	2015-8-16,pesce,formaggio
 	=>
 	2015-8,pesce,1
 	2015-8,formaggio,1
-
+	
 	quindi in output abbiamo Text, IntWritable*/
 	public static class Mapper1 extends Mapper<LongWritable, Text, Text, IntWritable> {
 		private Text keyDateProduct = new Text();
@@ -51,7 +53,7 @@ public class Esercizio1 extends Configured implements Tool {
 			}
 		}
 	}
-	
+
 	/* Il primo reducer ci fa le somme quindi 
 	 * 2015-8:pesce 1  
 	 * 2015-8:pesce 1
@@ -69,7 +71,7 @@ public class Esercizio1 extends Configured implements Tool {
 			context.write(key, new IntWritable(sum));
 		}
 	}
-	
+
 	/* Questo secondo mapper deve splittare la chiave data:prodotto in data: e il valore deve diventare prodotto quantità
 	 * 2015-8:pesce 2
 	 * 2015-8:formaggio 30
@@ -120,15 +122,13 @@ public class Esercizio1 extends Configured implements Tool {
 				int quantityInteger = Integer.parseInt(tokenQuantity);
 				countMap.put(product, quantityInteger);
 			}
-			sortedMap = countMap.entrySet().stream().sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
-					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (x, y) -> {
-						throw new AssertionError();
-					}, LinkedHashMap::new));
+
+			sortedMap = sortByValue(countMap);
 
 			String fiveProducts = "";
 			int counter = 0;
 			for (String keySorted : sortedMap.keySet()) {
-				if (counter == 5) { // TODO: check if 6
+				if (counter == 5) {
 					break;
 				}
 				fiveProducts = fiveProducts + keySorted + " " + sortedMap.get(keySorted).toString();
@@ -142,7 +142,7 @@ public class Esercizio1 extends Configured implements Tool {
 			context.write(key, monthlyProducts);
 		}
 	}
-	
+
 	public int run(String[] args) throws Exception {
 		Path input = new Path(args[0]);
 		Path output = new Path(args[1]);
@@ -169,7 +169,7 @@ public class Esercizio1 extends Configured implements Tool {
 		job1.setMapOutputValueClass(IntWritable.class);
 
 		long startTime = System.currentTimeMillis();
-		
+
 		succ = job1.waitForCompletion(true);
 		if (!succ) {
 			System.out.println("Job1 failed, exiting");
@@ -213,5 +213,21 @@ public class Esercizio1 extends Configured implements Tool {
 	public static void main(String[] args) throws Exception {
 		int res = ToolRunner.run(new Configuration(), new Esercizio1(), args);
 		System.exit(res);
+	}
+
+	public static <K, V extends Comparable<? super V>> Map<K, V> sortByValue(Map<K, V> map) {
+		List<Map.Entry<K, V>> list = new LinkedList<>(map.entrySet());
+		Collections.sort(list, new Comparator<Map.Entry<K, V>>() {
+			@Override
+			public int compare(Map.Entry<K, V> o1, Map.Entry<K, V> o2) {
+				return (o1.getValue()).compareTo(o2.getValue());
+			}
+		});
+
+		Map<K, V> result = new LinkedHashMap<>();
+		for (Map.Entry<K, V> entry : list) {
+			result.put(entry.getKey(), entry.getValue());
+		}
+		return result;
 	}
 }
