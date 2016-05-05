@@ -22,10 +22,10 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.commons.io.FileUtils;
 
-public class Esercizio1old implements Serializable{
+public class Esercizio1 implements Serializable{
     private static String pathToFile;
     private static final long serialVersionUID = 1L;
-    public Esercizio1old(String file){
+    public Esercizio1(String file){
         this.pathToFile = file;
     }
     public static void main(String[] args) throws IOException{
@@ -35,7 +35,7 @@ public class Esercizio1old implements Serializable{
         
         long startDate = new Date().getTime();
         
-        Esercizio1old wc = new Esercizio1old(args[0]);        
+        Esercizio1 wc = new Esercizio1(args[0]);        
         JavaPairRDD<String, List<Tuple2<String,Integer>>> result =wc.aggregate();
         long endDate = new Date().getTime();
 		System.out.println("Job took "+(TimeUnit.MILLISECONDS.toMillis(endDate-startDate)) + " milliseconds");

@@ -19,11 +19,11 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.spark.api.java.function.Function2;
-public class Esercizio3old implements Serializable{
+public class Esercizio3 implements Serializable{
     private static String pathToFileScontrini;
     private static final long serialVersionUID = 1L;
     private static int rowsNumber;
-    public Esercizio3old(String fileScontrini){
+    public Esercizio3(String fileScontrini){
         this.pathToFileScontrini = fileScontrini;
     }
     public static void main(String[] args) throws IOException{
@@ -34,7 +34,7 @@ public class Esercizio3old implements Serializable{
         SparkConf conf = new SparkConf()
         .setAppName("Esercizio3");
         JavaSparkContext sc = new JavaSparkContext(conf);
-        Esercizio3old wc = new Esercizio3old(args[0]); 
+        Esercizio3 wc = new Esercizio3(args[0]); 
         rowsNumber = (int)countRows(sc); //vedere come fare il parsing
         //System.out.println("countRows: "+rowsNumber);
         JavaPairRDD<String, String> result = wc.computeJoin(sc);

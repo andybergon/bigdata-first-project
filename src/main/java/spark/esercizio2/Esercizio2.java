@@ -18,11 +18,11 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.spark.api.java.function.Function2;
 
-public class Esercizio2old implements Serializable{
+public class Esercizio2 implements Serializable{
 	private static String pathToFileScontrini;
 	private static String pathToFilePrice;
 	private static final long serialVersionUID = 1L;
-	public Esercizio2old(String fileScontrini, String filePrezzi){
+	public Esercizio2(String fileScontrini, String filePrezzi){
 		this.pathToFileScontrini = fileScontrini;
 		this.pathToFilePrice = filePrezzi;
 	}
@@ -37,7 +37,7 @@ public class Esercizio2old implements Serializable{
 				.setAppName("Esercizio2");
 		JavaSparkContext sc = new JavaSparkContext(conf);
 
-		Esercizio2old wc = new Esercizio2old(args[0], args[1]); 
+		Esercizio2 wc = new Esercizio2(args[0], args[1]); 
 		//        JavaPairRDD<String,Integer> resultPrice = wc.loadPrices(sc);
 		//        resultPrice.saveAsTextFile("/Users/Simone/Desktop/sparkPrices");
 		//        JavaPairRDD<String, List<Tuple2<String,Integer>>> result =wc.aggregate(sc);
