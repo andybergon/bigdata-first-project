@@ -2,7 +2,7 @@ package util;
 
 import java.util.concurrent.TimeUnit;
 
-public class DurationFormatter {
+public class DurationPrinter {
 
 	public static String formatDuration(long milliseconds) {
 
@@ -27,5 +27,19 @@ public class DurationFormatter {
 		}
 
 		return formatted;
+	}
+	
+	public static void printElapsedTime(long startTime) {
+		printElapsedTimeWithMessage(startTime, "Time from Beginning");
+	}
+	
+	public static void printElapsedTimeWithMessage(long startTime, String message) {
+		long endTime = System.currentTimeMillis();
+		long elapsedTime = endTime - startTime;
+
+		String formattedElapsedTime = DurationPrinter.formatDuration(elapsedTime);
+		System.out.println("##########################################################");
+		System.out.println(message + ": " + formattedElapsedTime);
+		System.out.println("##########################################################");
 	}
 }

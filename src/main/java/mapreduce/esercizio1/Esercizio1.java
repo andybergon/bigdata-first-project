@@ -23,7 +23,7 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 
-import util.DurationFormatter;
+import util.DurationPrinter;
 
 public class Esercizio1 extends Configured implements Tool {
 	private static final IntWritable ONE = new IntWritable(1);
@@ -198,7 +198,7 @@ public class Esercizio1 extends Configured implements Tool {
 		long endTime = System.currentTimeMillis();
 		long elapsedTime = endTime - startTime;
 
-		String formattedElapsedTime = DurationFormatter.formatDuration(elapsedTime);
+		String formattedElapsedTime = DurationPrinter.formatDuration(elapsedTime);
 
 		if (!succ) {
 			System.out.println("Job FAILED after " + formattedElapsedTime);

@@ -7,12 +7,11 @@ collection items terminated by ',';
 
 
 -- LOAD DATA local INPATH '/home/luca/Desktop/hive/spesa.txt'
--- LOAD DATA INPATH 'input/hive/spesa.txt'
+-- LOAD DATA local INPATH '/home/andybergon/input/hive/spesa.txt'
 -- LOAD DATA local INPATH '/pico/home/usertrain/a08trb02/input/hive/spesa.txt'
 
-LOAD DATA local INPATH '/home/andybergon/input/hive/spesa.txt'
+LOAD DATA INPATH '/user/hive/input/spesa.txt'
 OVERWRITE INTO TABLE products;
-
 
 CREATE TABLE dateproduct AS
 SELECT x.data, x.coll[0], x.coll[1], x.coll[2], x.coll[3], x.coll[4]

@@ -5,8 +5,9 @@ import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.PairFlatMapFunction;
 import org.apache.spark.api.java.function.PairFunction;
+
 import scala.Tuple2;
-import util.DurationFormatter;
+import util.DurationPrinter;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,12 +23,6 @@ import org.apache.commons.io.FileUtils;
 public class Esercizio1 implements Serializable {
 	private static final long serialVersionUID = 1L;
 
-	private static String inputFile;
-
-	public Esercizio1(String file) {
-		inputFile = file;
-	}
-
 	public static void main(String[] args) throws IOException {
 		if (args.length < 2) {
 			System.err.println("Usage:  spark-submit ... jar <input_file> <output_folder>");
@@ -36,42 +31,24 @@ public class Esercizio1 implements Serializable {
 
 		long startTime = System.currentTimeMillis();
 
-		Esercizio1 esercizio1 = new Esercizio1(args[0]);
+		String inputFileReceipt = args[0];
 		String outputFolderPath = args[1];
 
-		JavaPairRDD<String, List<Tuple2<String, Integer>>> result = esercizio1.aggregate();
-
-		long endTime = System.currentTimeMillis();
-		long elapsedTime = endTime - startTime;
-
-		String formattedElapsedTime = DurationFormatter.formatDuration(elapsedTime);
-		System.out.println("##########################################################");
-		System.out.println("Job COMPLETED in " + formattedElapsedTime);
-		System.out.println("##########################################################");
-
-		File sparkoutput = new File(outputFolderPath);
-		deleteFile(sparkoutput); // sicuro serva e non basti elimina dir?
-		FileUtils.deleteDirectory(sparkoutput);
-
-		// TODO: elimina e metti stampe
-		result.saveAsTextFile(outputFolderPath); //saveAsTextFile crea una NUOVA directory!!!
-	}
-
-	public static void deleteFile(File element) {
-		if (element.isDirectory()) {
-			for (File sub : element.listFiles()) {
-				deleteFile(sub);
-			}
-		}
-		element.delete();
-	}
-
-	/**
-	 * Load the data from the text file and return an RDD of words
-	 */
-	public JavaPairRDD<String, Integer> loadData() {
 		SparkConf sparkConf = new SparkConf().setAppName("Esercizio1");
 		JavaSparkContext sparkContext = new JavaSparkContext(sparkConf);
+
+		JavaPairRDD<String, List<Tuple2<String, Integer>>> result = calculateResult(sparkContext, inputFileReceipt);
+		DurationPrinter.printElapsedTimeWithMessage(startTime, "Time to create RDD");
+
+		FileUtils.deleteDirectory(new File(outputFolderPath));
+		result.saveAsTextFile(outputFolderPath); // saveAsTextFile creates a NEW directory!
+		DurationPrinter.printElapsedTimeWithMessage(startTime, "Time to complete Job");
+
+		sparkContext.close();
+	}
+
+	private static JavaPairRDD<String, List<Tuple2<String, Integer>>> calculateResult(JavaSparkContext sparkContext,
+			String inputFile) {
 		JavaPairRDD<String, Integer> ones = sparkContext.textFile(inputFile)
 				.flatMapToPair(new PairFlatMapFunction<String, String, Integer>() {
 					private static final long serialVersionUID = 1L;
@@ -86,6 +63,8 @@ public class Esercizio1 implements Serializable {
 						return results;
 					}
 				});
+
+		//"data prod", contatore --> data, lista <prod, i 
 		JavaPairRDD<String, Integer> counts = ones.reduceByKey(new Function2<Integer, Integer, Integer>() {
 			private static final long serialVersionUID = 1L;
 
@@ -94,11 +73,7 @@ public class Esercizio1 implements Serializable {
 				return i1 + i2;
 			}
 		});
-		return counts;
-	}
 
-	public JavaPairRDD<String, List<Tuple2<String, Integer>>> aggregate() {
-		JavaPairRDD<String, Integer> counts = loadData(); //"data prod", contatore --> data, lista <prod, i 
 		JavaPairRDD<String, String> aggregate = counts
 				.mapToPair(new PairFunction<Tuple2<String, Integer>, String, String>() {
 					private static final long serialVersionUID = 1L;
@@ -110,6 +85,7 @@ public class Esercizio1 implements Serializable {
 						return new Tuple2<>(date, item_count);
 					}
 				});
+
 		JavaPairRDD<String, String> reduced = aggregate.reduceByKey(new Function2<String, String, String>() {
 			private static final long serialVersionUID = 1L;
 
@@ -118,6 +94,7 @@ public class Esercizio1 implements Serializable {
 				return s1 + ", " + s2;
 			}
 		});
+
 		// lo applico ad una <Tuple2<String,String> del JavaPairRDD<String,String> e returno un JavaPairRDD<String,List<String,Integer>>>
 		JavaPairRDD<String, List<Tuple2<String, Integer>>> date2list = reduced
 				.mapToPair(new PairFunction<Tuple2<String, String>, String, List<Tuple2<String, Integer>>>() {
@@ -137,7 +114,7 @@ public class Esercizio1 implements Serializable {
 								return t2._2.compareTo(t1._2);
 							}
 						});
-						//tronco se Ã¨ maggiore di 5
+						//tronco se è maggiore di 5
 						if (lista.size() > 5) {
 							List<Tuple2<String, Integer>> subList = lista.subList(0, 5); //da 0 a 4
 							return new Tuple2<>(s._1, subList); //ritornato (data, lista(prod,cont))
@@ -145,6 +122,8 @@ public class Esercizio1 implements Serializable {
 						return new Tuple2<>(s._1, lista);
 					}
 				});
+
 		return date2list;
 	}
+
 }

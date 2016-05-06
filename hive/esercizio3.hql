@@ -7,15 +7,16 @@ fields terminated by ':'
 collection items terminated by ',';
 
 -- LOAD DATA local INPATH '/home/luca/Desktop/hive/spesa.txt'
--- LOAD DATA INPATH '/input/hive/spesa.txt'
+-- LOAD DATA local INPATH '/home/andybergon/input/hive/spesa.txt'
 -- LOAD DATA local INPATH '/pico/home/usertrain/a08trb02/input/hive/spesa.txt'
 
-LOAD DATA local INPATH '/home/andybergon/input/hive/spesa.txt'
+LOAD DATA INPATH '/user/hive/input/spesa.txt'
 OVERWRITE INTO TABLE receipts1;
 
-CREATE TABLE receipts
-AS SELECT reflect('java.util.UUID','randomUUID') as id, *
+CREATE TABLE receipts AS 
+SELECT reflect('java.util.UUID','randomUUID') as id, *
 FROM receipts1;
+
 CREATE TABLE pairs_in_receipt AS
 SELECT f.prod1, f.prod2, f.perc1, concat(f.count/v.occurency*100,'%')
 FROM

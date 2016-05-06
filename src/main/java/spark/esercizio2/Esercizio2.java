@@ -6,7 +6,7 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.PairFlatMapFunction;
 import org.apache.spark.api.java.function.PairFunction;
 import scala.Tuple2;
-import util.DurationFormatter;
+import util.DurationPrinter;
 
 import java.io.File;
 import java.io.IOException;
@@ -21,14 +21,6 @@ import org.apache.spark.api.java.function.Function2;
 public class Esercizio2 implements Serializable {
 	private static final long serialVersionUID = 1L;
 
-	private String pathToFileScontrini;
-	private String pathToFilePrice;
-
-	public Esercizio2(String fileScontrini, String filePrezzi) {
-		this.pathToFileScontrini = fileScontrini;
-		this.pathToFilePrice = filePrezzi;
-	}
-
 	public static void main(String[] args) throws IOException {
 		if (args.length < 3) {
 			System.err.println(
@@ -38,43 +30,27 @@ public class Esercizio2 implements Serializable {
 
 		long startTime = System.currentTimeMillis();
 
-		SparkConf conf = new SparkConf().setAppName("Esercizio2");
-		JavaSparkContext sc = new JavaSparkContext(conf);
+		SparkConf sparkConf = new SparkConf().setAppName("Esercizio2");
+		JavaSparkContext sparkContext = new JavaSparkContext(sparkConf);
 
-		Esercizio2 wc = new Esercizio2(args[0], args[1]);
+		String inputFileReceipt = args[0];
+		String inputFilePrices = args[1];
 		String outputFolderPath = args[2];
 
-		JavaPairRDD<String, List<Tuple2<String, Integer>>> join = wc.computeJoin(sc);
+		JavaPairRDD<String, List<Tuple2<String, Integer>>> result = calculateResult(sparkContext, inputFileReceipt,
+				inputFilePrices);
+		DurationPrinter.printElapsedTimeWithMessage(startTime, "Time to create RDD");
 
-		File sparkoutput = new File(outputFolderPath);
-		deleteFile(sparkoutput);
-		FileUtils.deleteDirectory(sparkoutput);
+		FileUtils.deleteDirectory(new File(outputFolderPath));
+		result.saveAsTextFile(outputFolderPath);
+		DurationPrinter.printElapsedTimeWithMessage(startTime, "Time to complete Job");
 
-		long endTime = System.currentTimeMillis();
-		long elapsedTime = endTime - startTime;
-
-		String formattedElapsedTime = DurationFormatter.formatDuration(elapsedTime);
-		System.out.println("##########################################################");
-		System.out.println("Job COMPLETED in " + formattedElapsedTime);
-		System.out.println("##########################################################");
-
-		join.saveAsTextFile(outputFolderPath);
-		sc.close();
+		sparkContext.close();
 	}
 
-	public static void deleteFile(File element) {
-		if (element.isDirectory()) {
-			for (File sub : element.listFiles()) {
-				deleteFile(sub);
-			}
-		}
-	}
-
-	public JavaPairRDD<String, Integer> loadData(JavaSparkContext sc) {
-		//        SparkConf conf = new SparkConf()
-		//        .setAppName("Esercizio2");
-		//        JavaSparkContext sc = new JavaSparkContext(conf);
-		JavaPairRDD<String, Integer> ones = sc.textFile(pathToFileScontrini)
+	private static JavaPairRDD<String, List<Tuple2<String, Integer>>> calculateResult(JavaSparkContext sparkContext,
+			String inputFileReceipt, String inputFilePrices) {
+		JavaPairRDD<String, Integer> ones = sparkContext.textFile(inputFileReceipt)
 				.flatMapToPair(new PairFlatMapFunction<String, String, Integer>() {
 					private static final long serialVersionUID = 1L;
 
@@ -88,6 +64,19 @@ public class Esercizio2 implements Serializable {
 						return results;
 					}
 				});
+
+		JavaPairRDD<String, Integer> prices = sparkContext.textFile(inputFilePrices)
+				.mapToPair(new PairFunction<String, String, Integer>() {
+					private static final long serialVersionUID = 1L;
+
+					@Override
+					public Tuple2<String, Integer> call(String s) {
+						String item = s.split(",")[0];
+						int price = Integer.parseInt(s.split(",")[1]);
+						return new Tuple2<>(item, price);
+					}
+				});
+
 		JavaPairRDD<String, Integer> counts = ones.reduceByKey(new Function2<Integer, Integer, Integer>() {
 			private static final long serialVersionUID = 1L;
 
@@ -96,11 +85,7 @@ public class Esercizio2 implements Serializable {
 				return i1 + i2;
 			}
 		});
-		return counts;
-	}
 
-	public JavaPairRDD<String, List<Tuple2<String, Integer>>> aggregate(JavaSparkContext sc) {
-		JavaPairRDD<String, Integer> counts = loadData(sc); //"data prod", contatore --> data, lista <prod, i 
 		JavaPairRDD<String, String> aggregate = counts
 				.mapToPair(new PairFunction<Tuple2<String, Integer>, String, String>() {
 					private static final long serialVersionUID = 1L;
@@ -112,6 +97,7 @@ public class Esercizio2 implements Serializable {
 						return new Tuple2<>(s._1.split(",")[1], date_count); // ("item", "data:cont")              
 					}
 				});
+
 		JavaPairRDD<String, String> reduced = aggregate.reduceByKey(new Function2<String, String, String>() {
 			private static final long serialVersionUID = 1L;
 
@@ -119,7 +105,9 @@ public class Esercizio2 implements Serializable {
 			public String call(String s1, String s2) {
 				return s1 + " " + s2;
 			}
-		}); //arrivo ad avere ("pane", "02-2015:852")
+		});
+
+		// arrivo ad avere ("pane", "02-2015:852")
 		// lo applico ad una <Tuple2<String,String> del JavaPairRDD<String,String> e returno un JavaPairRDD<String,List<String,Integer>>>
 		JavaPairRDD<String, List<Tuple2<String, Integer>>> date2list = reduced
 				.mapToPair(new PairFunction<Tuple2<String, String>, String, List<Tuple2<String, Integer>>>() {
@@ -136,32 +124,9 @@ public class Esercizio2 implements Serializable {
 						return new Tuple2<>(s._1, lista);
 					}
 				});
-		return date2list;
-	}
 
-	/* carica i prezzi dal file prezzi e li inserisce in un JavaPairRDD<String, Integer> */
-	public JavaPairRDD<String, Integer> loadPrices(JavaSparkContext sc) {
-
-		JavaPairRDD<String, Integer> mappa = sc.textFile(pathToFilePrice)
-				.mapToPair(new PairFunction<String, String, Integer>() {
-					private static final long serialVersionUID = 1L;
-
-					@Override
-					public Tuple2<String, Integer> call(String s) {
-						String item = s.split(",")[0];
-						int price = Integer.parseInt(s.split(",")[1]);
-						return new Tuple2<>(item, price);
-					}
-				});
-
-		return mappa;
-	}
-
-	/* esegue il join tra firstRDD (JavaPairRDD<String, List<Tuple2<String,Integer>>>) e secondRDD (JavaPairRDD<String, Integer>) */
-	public JavaPairRDD<String, List<Tuple2<String, Integer>>> computeJoin(JavaSparkContext sc) {
-
-		JavaPairRDD<String, List<Tuple2<String, Integer>>> firstRDD = aggregate(sc);
-		JavaPairRDD<String, Integer> secondRDD = loadPrices(sc);
+		JavaPairRDD<String, List<Tuple2<String, Integer>>> firstRDD = date2list;
+		JavaPairRDD<String, Integer> secondRDD = prices;
 		JavaPairRDD<String, Tuple2<List<Tuple2<String, Integer>>, Integer>> join = firstRDD.join(secondRDD);
 
 		JavaPairRDD<String, List<Tuple2<String, Integer>>> result = join.mapToPair(
@@ -180,8 +145,7 @@ public class Esercizio2 implements Serializable {
 						return new Tuple2<>(s._1, list);
 					}
 				});
-
 		return result;
-
 	}
+
 }

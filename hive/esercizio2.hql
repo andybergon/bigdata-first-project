@@ -7,20 +7,20 @@ fields terminated by ':'
 collection items terminated by ',';
 
 -- LOAD DATA local INPATH '/home/luca/Desktop/hive/spesa.txt'
--- LOAD DATA INPATH 'input/hive/spesa.txt'
+-- LOAD DATA local INPATH '/home/andybergon/input/hive/spesa.txt'
 -- LOAD DATA local INPATH '/pico/home/usertrain/a08trb02/input/hive/spesa.txt'
 
-LOAD DATA local INPATH '/home/andybergon/input/hive/spesa.txt'
+LOAD DATA INPATH '/user/hive/input/spesa.txt'
 OVERWRITE INTO TABLE receipts;
 
 CREATE TABLE prices (product STRING, price STRING) row format delimited
 fields terminated by ',';
 
 -- LOAD DATA local INPATH '/home/luca/Desktop/hive/prices.txt'
--- LOAD DATA INPATH 'input/hive/prices.txt'
+-- LOAD DATA local INPATH '/home/andybergon/input/hive/prices.txt'
 -- LOAD DATA local INPATH '/pico/home/usertrain/a08trb02/input/hive/prices.txt'
 
-LOAD DATA local INPATH '/home/andybergon/input/hive/prices.txt'
+LOAD DATA INPATH '/user/hive/input/prices.txt'
 OVERWRITE INTO TABLE prices;
 
 
@@ -37,4 +37,3 @@ FROM
     ORDER BY data ASC, prod ASC) y, prices
   WHERE prod = product) z
 GROUP BY prod;
-
