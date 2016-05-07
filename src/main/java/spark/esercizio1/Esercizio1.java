@@ -13,6 +13,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
@@ -102,24 +103,25 @@ public class Esercizio1 implements Serializable {
 
 					@Override
 					public Tuple2<String, List<Tuple2<String, Integer>>> call(Tuple2<String, String> s) {
-						List<Tuple2<String, Integer>> lista = new ArrayList<Tuple2<String, Integer>>();
+						List<Tuple2<String, Integer>> productCountList = new ArrayList<Tuple2<String, Integer>>();
 						for (String item_count : s._2.split(", ")) {
 							String item = item_count.split(" ")[0]; //prodotto
 							int count = Integer.parseInt(item_count.split(" ")[1]); //contatore
-							lista.add(new Tuple2<>(item, count));
+							productCountList.add(new Tuple2<>(item, count));
 						}
-						lista.sort(new Comparator<Tuple2<String, Integer>>() {
+						Collections.sort(productCountList, new Comparator<Tuple2<String, Integer>>() {
 							@Override
 							public int compare(Tuple2<String, Integer> t1, Tuple2<String, Integer> t2) {
 								return t2._2.compareTo(t1._2);
 							}
 						});
+						
 						//tronco se è maggiore di 5
-						if (lista.size() > 5) {
-							List<Tuple2<String, Integer>> subList = lista.subList(0, 5); //da 0 a 4
+						if (productCountList.size() > 5) {
+							List<Tuple2<String, Integer>> subList = productCountList.subList(0, 5); //da 0 a 4
 							return new Tuple2<>(s._1, subList); //ritornato (data, lista(prod,cont))
 						}
-						return new Tuple2<>(s._1, lista);
+						return new Tuple2<>(s._1, productCountList);
 					}
 				});
 
