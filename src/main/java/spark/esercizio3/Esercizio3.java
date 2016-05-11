@@ -20,7 +20,6 @@ import java.util.Date;
 import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.spark.api.java.function.Function2;
 
 public class Esercizio3 implements Serializable {
 	private static final long serialVersionUID = 1L;
@@ -57,26 +56,26 @@ public class Esercizio3 implements Serializable {
 		final int rowsNumber = (int) input.count();
 
 		JavaPairRDD<Tuple2<String, String>, Integer> onesCouples = input.flatMapToPair(new LineToOnesWithCouples());
-		RDDprinter.printSampleRDD(onesCouples); // [((pane,latte),1), ((latte,pane),1)]
+		//		RDDprinter.printSampleRDD(onesCouples); // [((pane,latte),1), ((latte,pane),1)]
 
 		JavaPairRDD<Tuple2<String, String>, Integer> countCouples = onesCouples.reduceByKey(new OneToCount());
-		RDDprinter.printSampleRDD(countCouples); // [((pane,vino),51678), ((insalata,formaggio),51601)]
+		//		RDDprinter.printSampleRDD(countCouples); // [((pane,vino),51678), ((insalata,formaggio),51601)]
 
 		JavaPairRDD<String, Tuple2<String, Integer>> firstElementPair = countCouples.mapToPair(new CountToPairs());
-		RDDprinter.printSampleRDD(firstElementPair); // [(pane,(vino,51678)), (insalata,(formaggio,51601))]
+		//		RDDprinter.printSampleRDD(firstElementPair); // [(pane,(vino,51678)), (insalata,(formaggio,51601))]
 
 		JavaPairRDD<String, Integer> onesSingles = sparkContext.textFile(inputFileReceipt)
 				.flatMapToPair(new LineToOne1());
-		RDDprinter.printSampleRDD(onesSingles); // [(pane,1), (latte,1)]
+		//		RDDprinter.printSampleRDD(onesSingles); // [(pane,1), (latte,1)]
 
 		JavaPairRDD<String, Integer> countSingles = onesSingles.reduceByKey(new OneToCount());
-		RDDprinter.printSampleRDD(countSingles); // [(latte,246110), (vino,245011)]
+		//		RDDprinter.printSampleRDD(countSingles); // [(latte,246110), (vino,245011)]
 
 		JavaPairRDD<String, Tuple2<Tuple2<String, Integer>, Integer>> join = firstElementPair.join(countSingles);
-		RDDprinter.printSampleRDD(join); // [(latte,((dolce,51628),246110)), (latte,((formaggio,51961),246110))]
+		//		RDDprinter.printSampleRDD(join); // [(latte,((dolce,51628),246110)), (latte,((formaggio,51961),246110))]
 
 		JavaPairRDD<String, String> result = join.sortByKey().mapToPair(new JoinToResult(rowsNumber));
-		RDDprinter.printSampleRDD(result); // [(latte,dolce,5.16,20.98), (latte,formaggio,5.20,21.11)]
+		//		RDDprinter.printSampleRDD(result); // [(latte,dolce,5.16,20.98), (latte,formaggio,5.20,21.11)]
 
 		return result;
 	}
@@ -145,102 +144,6 @@ public class Esercizio3 implements Serializable {
 			}
 			return results;
 		}
-	}
-
-	/* OLD IMPLEMENTATION */
-	@SuppressWarnings("unused")
-	private static JavaPairRDD<String, String> calculateResult2(JavaSparkContext sparkContext,
-			String inputFileReceipt) {
-
-		// vedere come fare il parsing
-		// VEDERE SE SU CLUSTER FUNZIONA COUNT ROWS
-		final int rowsNumber = (int) sparkContext.textFile(inputFileReceipt).count();
-		System.out.println("Total Rows: " + rowsNumber);
-
-		JavaPairRDD<Tuple2<String, String>, Integer> ones = sparkContext.textFile(inputFileReceipt)
-				.flatMapToPair(new PairFlatMapFunction<String, Tuple2<String, String>, Integer>() {
-					private static final long serialVersionUID = 1L;
-
-					@Override
-					public Iterable<Tuple2<Tuple2<String, String>, Integer>> call(String rec) {
-						List<Tuple2<Tuple2<String, String>, Integer>> results = new ArrayList<Tuple2<Tuple2<String, String>, Integer>>();
-						String[] tokens = StringUtils.split(rec, ",");
-						for (int i = 1; i < tokens.length; i++) {
-							for (int j = 1; j < tokens.length; j++) {
-								if (i != j) {
-									results.add(new Tuple2<>(new Tuple2<>(tokens[i], tokens[j]), 1));
-								}
-							}
-						}
-						return results;
-					}
-				});
-
-		JavaPairRDD<Tuple2<String, String>, Integer> counts = ones
-				.reduceByKey(new Function2<Integer, Integer, Integer>() {
-					private static final long serialVersionUID = 1L;
-
-					@Override
-					public Integer call(Integer i1, Integer i2) {
-						return i1 + i2;
-					}
-				});
-
-		JavaPairRDD<String, Tuple2<String, Integer>> firstRDD = counts.mapToPair(
-				new PairFunction<Tuple2<Tuple2<String, String>, Integer>, String, Tuple2<String, Integer>>() {
-					private static final long serialVersionUID = 1L;
-
-					@Override
-					public Tuple2<String, Tuple2<String, Integer>> call(Tuple2<Tuple2<String, String>, Integer> s) {
-						return new Tuple2<>(s._1._1, new Tuple2<>(s._1._2, s._2));
-					}
-				});
-
-		//
-
-		JavaPairRDD<String, Integer> ones1 = sparkContext.textFile(inputFileReceipt)
-				.flatMapToPair(new PairFlatMapFunction<String, String, Integer>() {
-					private static final long serialVersionUID = 1L;
-
-					@Override
-					public Iterable<Tuple2<String, Integer>> call(String rec) {
-						List<Tuple2<String, Integer>> results = new ArrayList<Tuple2<String, Integer>>();
-						String[] tokens = StringUtils.split(rec, ",");
-						for (int i = 1; i < tokens.length; i++) {
-							results.add(new Tuple2<String, Integer>(tokens[i], 1)); //genero solo (pane,1) senza data
-						}
-						return results;
-					}
-				});
-		JavaPairRDD<String, Integer> secondRDD = ones1.reduceByKey(new Function2<Integer, Integer, Integer>() {
-			private static final long serialVersionUID = 1L;
-
-			@Override
-			public Integer call(Integer i1, Integer i2) {
-				return i1 + i2;
-			}
-		});
-
-		JavaPairRDD<String, Tuple2<Tuple2<String, Integer>, Integer>> join = firstRDD.join(secondRDD);
-		// genera (pane, (latte,1), contPane) 
-
-		JavaPairRDD<String, String> result = join.mapToPair(
-				new PairFunction<Tuple2<String, Tuple2<Tuple2<String, Integer>, Integer>>, String, String>() {
-					private static final long serialVersionUID = 1L;
-
-					@Override
-					public Tuple2<String, String> call(Tuple2<String, Tuple2<Tuple2<String, Integer>, Integer>> s) {
-						double pairsCount = (double) s._2._1._2;
-						double itemCount = (double) s._2._2;
-
-						String support = Double.toString((pairsCount / rowsNumber) * 100);
-						String confidence = Double.toString((pairsCount / itemCount) * 100);
-
-						return new Tuple2<>(s._1 + "," + s._2._1._1, support + "," + confidence);
-
-					}
-				});
-		return result;
 	}
 
 }
