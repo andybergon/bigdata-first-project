@@ -2,8 +2,8 @@ package mapreduce.esercizio3;
 
 import java.io.IOException;
 import java.text.DecimalFormat;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
@@ -63,7 +63,7 @@ public class Esercizio3 extends Configured implements Tool {
 			ctx.write(TOTAL_RECEIPTS, ONE);
 		}
 	}
-	
+
 	/*
 	 * a,b	1
 	 * a,b	1
@@ -87,7 +87,7 @@ public class Esercizio3 extends Configured implements Tool {
 			ctx.write(key, new IntWritable(sum));
 		}
 	}
-	
+
 	/* 
 	 * 
 	 * a,b	3
@@ -101,8 +101,8 @@ public class Esercizio3 extends Configured implements Tool {
 	 * 
 	 */
 	public static class PIRReducer extends Reducer<Text, IntWritable, Text, Text> {
-		private Map<String, Integer> productPair2receiptsNumber = new HashMap<String, Integer>();
-		private Map<String, Integer> product2receiptsNumber = new HashMap<String, Integer>();
+		private SortedMap<String, Integer> productPair2receiptsNumber = new TreeMap<String, Integer>();
+		private SortedMap<String, Integer> product2receiptsNumber = new TreeMap<String, Integer>();
 		private IntWritable totalReceipts;
 
 		@Override
@@ -152,7 +152,7 @@ public class Esercizio3 extends Configured implements Tool {
 			}
 		}
 	}
-	
+
 	public int run(String[] args) throws Exception {
 		boolean succ = false;
 
