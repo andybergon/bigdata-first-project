@@ -153,7 +153,6 @@ public class Esercizio1 extends Configured implements Tool {
 
 		/* JOB 1 */
 		Job job1 = new Job(conf, Esercizio1.class.getSimpleName() + "#1");
-		//		job1.setWorkingDirectory(new Path("/pico/home/usertrain/a08trb02/mytmp"));
 
 		FileInputFormat.addInputPath(job1, input);
 		FileOutputFormat.setOutputPath(job1, temp);
@@ -179,17 +178,14 @@ public class Esercizio1 extends Configured implements Tool {
 
 		/* JOB 2 */
 		Job job2 = new Job(conf, Esercizio1.class.getSimpleName() + "#2");
-		//		job2.setWorkingDirectory(new Path("/pico/home/usertrain/a08trb02/mytmp"));
 
 		FileInputFormat.setInputPaths(job2, temp);
 		FileOutputFormat.setOutputPath(job2, output);
 		job2.setJarByClass(Esercizio1.class);
 
 		job2.setMapperClass(Mapper2.class);
-		// job2.setCombinerClass(Reducer2.class);
 		job2.setReducerClass(Reducer2.class);
 
-		// job2.setInputFormatClass(KeyValueTextInputFormat.class);
 		job2.setInputFormatClass(TextInputFormat.class);
 
 		job2.setMapOutputKeyClass(Text.class);

@@ -21,7 +21,6 @@ import org.apache.hadoop.util.ToolRunner;
 
 import util.DurationPrinter;
 
-
 public class Esercizio2 extends Configured implements Tool {
 	private static final IntWritable ONE = new IntWritable(1);
 
@@ -48,7 +47,7 @@ public class Esercizio2 extends Configured implements Tool {
 			}
 		}
 	}
-	
+
 	/* Il primo reducer ci fa le somme quindi chiave= 2015-8:pesce - valore=2
 	 * 2015-8:pesce 1  
 	 * 2015-8:pesce 1
@@ -206,16 +205,11 @@ public class Esercizio2 extends Configured implements Tool {
 		MultipleInputs.addInputPath(job2, temp, TextInputFormat.class, Mapper2.class);
 		MultipleInputs.addInputPath(job2, prices, TextInputFormat.class, MapperPrice.class);
 		FileOutputFormat.setOutputPath(job2, output);
-		
+
 		job2.setJarByClass(Esercizio2.class);
 
-		// job2.setMapperClass(Mapper2.class);
-		// job2.setCombinerClass(Reducer2.class);
 		job2.setReducerClass(Reducer2.class);
-		
-		// job2.setInputFormatClass(KeyValueTextInputFormat.class);
-		// job2.setInputFormatClass(TextInputFormat.class);
-		
+
 		job2.setMapOutputKeyClass(Text.class);
 		job2.setMapOutputValueClass(Text.class);
 
@@ -236,10 +230,8 @@ public class Esercizio2 extends Configured implements Tool {
 	}
 
 	public static void main(String[] args) throws Exception {
-
-		int ecode = ToolRunner.run(new Esercizio2(), args);
-		System.exit(ecode);
-
+		int res = ToolRunner.run(new Esercizio2(), args);
+		System.exit(res);
 	}
 
 }

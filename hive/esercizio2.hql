@@ -23,6 +23,8 @@ fields terminated by ',';
 LOAD DATA INPATH '/user/hive/input/prices.txt'
 OVERWRITE INTO TABLE prices;
 
+-- unix_timestamp works on AWS, date_format not
+-- from_unixtime(unix_timestamp(data, "yyyy-MM-DD"),"MM-yyyy")
 
 CREATE TABLE product_monthly_total AS
 SELECT z.prod AS prod, collect_set(CONCAT(z.data,":",z.total_price)) AS month_total
@@ -31,7 +33,7 @@ FROM
   FROM
     (SELECT x.data AS data, x.prod AS prod, count(1) AS tot
     FROM
-      (SELECT date_format(data, "MM/yyyy") AS data, prod
+      (SELECT date_format(data, "MM-yyyy") AS data, prod
       FROM receipts LATERAL VIEW explode(products) subA AS prod) x
     GROUP BY data, prod
     ORDER BY data ASC, prod ASC) y, prices
